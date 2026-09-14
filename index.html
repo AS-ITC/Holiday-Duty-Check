@@ -197,6 +197,18 @@ input,select,textarea{font-family:inherit;}
 .row{display:flex;gap:10px;}
 .row>*{flex:1;}
 
+/* Custom autocomplete (แทน <datalist> ซึ่งมือถือหลายรุ่น/เบราว์เซอร์ไม่แสดงผล เช่น iOS Safari) */
+.autocomplete-wrap{position:relative;}
+.autocomplete-list{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:50;
+  background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);
+  box-shadow:var(--shadow-md);max-height:240px;overflow-y:auto;
+}
+.autocomplete-item{padding:11px 16px;font-size:14.5px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);}
+.autocomplete-item:last-child{border-bottom:none;}
+.autocomplete-item:active,.autocomplete-item.active{background:var(--sky-100);}
+.autocomplete-empty{padding:11px 16px;font-size:13px;color:var(--text-soft);}
+
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   border:none;border-radius:var(--radius-pill);padding:14px 18px;font-size:16px;font-weight:700;
@@ -362,8 +374,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           </div>
           <div class="field">
             <label>ชื่อผู้ตรวจ</label>
-            <input type="text" id="ddInspector" list="inspectorList" placeholder="พิมพ์ค้นหาชื่อของคุณ...">
-            <datalist id="inspectorList"></datalist>
+            <div class="autocomplete-wrap">
+              <input type="text" id="ddInspector" autocomplete="off" placeholder="พิมพ์ค้นหาชื่อของคุณ...">
+              <div class="autocomplete-list hidden" id="inspectorAutoList"></div>
+            </div>
           </div>
           <div class="field">
             <label>วันที่ตรวจ</label>
@@ -508,50 +522,54 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-members" class="settings-panel">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้มาจากไฟล์ <b>data.js</b> ในระบบ ทุกคนเห็นชุดเดียวกันเสมอ — แก้ไขได้เฉพาะ <b>Dev</b> เท่านั้น โดยแก้ไฟล์ data.js บน GitHub โดยตรง การเพิ่ม/ลบด้านล่างมีผล<b>แค่เครื่องนี้ชั่วคราว</b> ใช้ดูตัวอย่าง/ทดสอบเท่านั้น ไม่ส่งผลกับคนอื่น</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้โหลดมาจากไฟล์ <b>master.json</b> ส่วนกลาง ทุกคนเห็นชุดเดียวกัน — การเพิ่ม/ลบด้านล่างมีผล<b>แค่เครื่องนี้ชั่วคราว</b> ถ้าต้องการให้ทุกคนเห็นการเปลี่ยนแปลง ให้แอดมินกด "ส่งออก master.json" ด้านล่างสุด แล้วอัปโหลดทับไฟล์เดิมในเว็บ</p>
         </div>
         <div class="card">
           <div class="row">
             <div class="field"><label>ชื่อ-สกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมชาย ใจดี"></div>
-            <div class="field"><label>แผนก</label><input type="text" id="newMemberDept" placeholder="เช่น Maintenance" list="deptList"><datalist id="deptList"></datalist></div>
+            <div class="field autocomplete-wrap"><label>แผนก</label><input type="text" id="newMemberDept" autocomplete="off" placeholder="เช่น Maintenance"><div class="autocomplete-list hidden" id="deptAutoList"></div></div>
           </div>
           <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ (ชั่วคราว)</button>
         </div>
         <div id="memberList"></div>
         <div class="card">
-          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
-          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo ของแอปนี้ (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.members</code>) แล้ว commit — ทุกคนจะเห็นรายชื่อใหม่ภายใน 1-2 นาทีหลัง deploy เสร็จ ไม่ต้องเชื่อมระบบอื่นเพิ่ม</p>
-          <button class="btn ghost" id="btnExportMaster">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+          <b>บันทึกให้ทุกคนเห็น (สำหรับแอดมิน)</b>
+          <p style="font-size:12px;color:var(--text-soft);">กดปุ่มนี้เพื่อบันทึกรายชื่อผู้ตรวจ + พื้นที่/โซนปัจจุบันขึ้นเว็บทันที (ต้องใส่ PIN แอดมิน) — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาทีโดยไม่ต้องทำอะไรเพิ่ม</p>
+          <button class="btn primary" id="btnSyncMaster">🔄 บันทึกขึ้นเว็บตอนนี้</button>
+          <p style="font-size:11.5px;color:var(--text-soft);margin-top:10px;">หรือถ้ายังไม่ได้ตั้งค่าตัวช่วยบันทึกอัตโนมัติ ใช้วิธีเดิมได้: ดาวน์โหลดไฟล์แล้วเอาไปอัปโหลดทับเองใน repo</p>
+          <button class="btn ghost" id="btnExportMaster">📤 ส่งออก master.json (วิธีเดิม)</button>
         </div>
       </div>
 
       <div id="settings-areas" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้โหลดมาจากไฟล์ <b>master.json</b> ส่วนกลางเช่นกัน — การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว จนกว่าแอดมินจะกด "บันทึกขึ้นเว็บตอนนี้"</p>
         </div>
         <div class="card">
           <div class="row">
-            <div class="field"><label>พื้นที่ (Location)</label><input type="text" id="newAreaLocation" placeholder="เช่น โรงงาน A" list="locList"><datalist id="locList"></datalist></div>
+            <div class="field autocomplete-wrap"><label>พื้นที่ (Location)</label><input type="text" id="newAreaLocation" autocomplete="off" placeholder="เช่น โรงงาน A"><div class="autocomplete-list hidden" id="locAutoList"></div></div>
             <div class="field"><label>โซน (Zone)</label><input type="text" id="newAreaZone" placeholder="เช่น โซน 1"></div>
           </div>
           <button class="btn primary" id="btnAddArea">+ เพิ่มพื้นที่/โซน (ชั่วคราว)</button>
         </div>
         <div id="areaList"></div>
         <div class="card">
-          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
-          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.areas</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
-          <button class="btn ghost" id="btnExportMaster2">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+          <b>บันทึกให้ทุกคนเห็น (สำหรับแอดมิน)</b>
+          <p style="font-size:12px;color:var(--text-soft);">กดปุ่มนี้เพื่อบันทึกรายชื่อผู้ตรวจ + พื้นที่/โซนปัจจุบันขึ้นเว็บทันที (ต้องใส่ PIN แอดมิน)</p>
+          <button class="btn primary" id="btnSyncMaster2">🔄 บันทึกขึ้นเว็บตอนนี้</button>
+          <p style="font-size:11.5px;color:var(--text-soft);margin-top:10px;">หรือใช้วิธีเดิม: ดาวน์โหลดไฟล์แล้วเอาไปอัปโหลดทับเองใน repo</p>
+          <button class="btn ghost" id="btnExportMaster2">📤 ส่งออก master.json (วิธีเดิม)</button>
         </div>
       </div>
 
       <div id="settings-data" class="settings-panel hidden">
         <div class="card">
           <b>เกี่ยวกับข้อมูล</b>
-          <p style="font-size:12px;color:var(--text-soft);">รายชื่อผู้ตรวจและพื้นที่/โซน โหลดมาจากไฟล์ <b>data.js</b> ที่อยู่บนเว็บ (ส่วนกลาง ทุกคนเห็นเหมือนกัน แก้ได้เฉพาะ Dev ผ่าน GitHub) ส่วนผลตรวจและรูปถ่ายที่บันทึกจะเก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่ส่งขึ้นที่ไหน — ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ผลตรวจจะหายไป กรุณาออกรายงาน PDF หรือสำรองไฟล์ไว้เป็นระยะ</p>
+          <p style="font-size:12px;color:var(--text-soft);">รายชื่อผู้ตรวจและพื้นที่/โซน โหลดมาจากไฟล์ <b>master.json</b> ที่อยู่บนเว็บ (ส่วนกลาง ทุกคนเห็นเหมือนกัน แก้ได้เฉพาะแอดมิน) ส่วนผลตรวจและรูปถ่ายที่บันทึกจะเก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่ส่งขึ้นที่ไหน — ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ผลตรวจจะหายไป กรุณาออกรายงาน PDF หรือสำรองไฟล์ไว้เป็นระยะ</p>
         </div>
         <div class="card">
           <b>สำรองข้อมูลผลตรวจ</b>
-          <p style="font-size:12px;color:var(--text-soft);">ดาวน์โหลดผลตรวจในเครื่องนี้ (ไม่รวมรูป) เป็นไฟล์ JSON เก็บไว้เผื่อฉุกเฉิน — คนละไฟล์กับ data.js</p>
+          <p style="font-size:12px;color:var(--text-soft);">ดาวน์โหลดผลตรวจในเครื่องนี้ (ไม่รวมรูป) เป็นไฟล์ JSON เก็บไว้เผื่อฉุกเฉิน — คนละไฟล์กับ master.json</p>
           <button class="btn secondary" id="btnExportJson">⬇ ส่งออกไฟล์สำรองผลตรวจ</button>
         </div>
         <div class="card">
@@ -968,8 +986,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 //# sourceMappingURL=jspdf.umd.min.js.map
 
 </script>
-<!-- ข้อมูลรายชื่อผู้ตรวจ + พื้นที่/โซน ("master data") — ไฟล์แยกต่างหาก แก้ได้เฉพาะ Dev ผ่าน GitHub -->
-<script src="./data.js"></script>
 <script type="module">
 /* ======================================================================
    ZONE: LOCAL STORAGE (IndexedDB) — ไม่มีเซิร์ฟเวอร์/คลาวด์ เก็บในเครื่องนี้เท่านั้น
@@ -983,7 +999,7 @@ function openIdb(){
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = () => {
       const dbi = req.result;
-      // members/areas ย้ายไปโหลดจาก data.js (window.MASTER_DATA) ส่วนกลางแทน (ไม่เก็บใน IndexedDB อีกต่อไป)
+      // members/areas ย้ายไปโหลดจาก master.json ส่วนกลางแทน (ไม่เก็บใน IndexedDB อีกต่อไป)
       if(!dbi.objectStoreNames.contains('records')) dbi.createObjectStore('records', { keyPath:'id' });
     };
     req.onsuccess = () => resolve(req.result);
@@ -1069,31 +1085,44 @@ function fmtCreatedAt(r){
 }
 
 /* ======================================================================
-   ZONE: โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js ส่วนกลาง — ทุกคนเห็นเหมือนกัน)
-   แก้ไขจริงต้องให้ Dev แก้ไฟล์ data.js ใน GitHub repo แล้ว commit/push (ไม่ต้องเชื่อมระบบอื่นเพิ่ม)
-   data.js เป็นไฟล์ <script> ธรรมดา โหลดมาก่อนหน้านี้แล้ว จะตั้งค่า window.MASTER_DATA ไว้ให้
+   ZONE: โหลดรายชื่อผู้ตรวจ/พื้นที่ (master.json ส่วนกลาง — ทุกคนเห็นเหมือนกัน)
+   แก้ไขจริงต้องให้แอดมินอัปเดตไฟล์ master.json บนเว็บ (ดูปุ่ม "ส่งออก master.json")
    ====================================================================== */
-function loadMaster(){
+const MASTER_JSON_URL = './master.json';
+const LS_MASTER_CACHE = 'dutycheck_master_cache_v1';
+// ตัวกลาง (Cloudflare Worker) ที่รับ PIN แอดมิน + ข้อมูล แล้วไปเขียน master.json ใน repo แทน
+// ใส่ URL ของ Worker หลัง deploy เสร็จ (ดูวิธีทำใน README) เช่น 'https://duty-check-sync.<ชื่อของคุณ>.workers.dev'
+const SYNC_WORKER_URL = 'https://PASTE_YOUR_WORKER_URL_HERE.workers.dev';
+async function loadMaster(){
   try{
-    const data = window.MASTER_DATA;
-    if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
+    const res = await fetch(MASTER_JSON_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
     DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
+    try{ localStorage.setItem(LS_MASTER_CACHE, JSON.stringify({ members: DBX.members, areas: DBX.areas })); }catch(e){}
     return true;
   }catch(e){
     console.error('loadMaster failed', e);
-    DBX.members = []; DBX.areas = [];
-    showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js) ไม่สำเร็จ: ' + e.message, 'error');
+    let cached = null;
+    try{ cached = JSON.parse(localStorage.getItem(LS_MASTER_CACHE) || 'null'); }catch(e2){}
+    if(cached){
+      DBX.members = cached.members || [];
+      DBX.areas = cached.areas || [];
+      showToast('โหลดรายชื่อกลางล่าสุดไม่สำเร็จ ใช้ข้อมูลที่เคยโหลดไว้ก่อนหน้าแทน', 'error');
+    } else {
+      DBX.members = []; DBX.areas = [];
+      showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (master.json) ไม่สำเร็จ — ถ้าเปิดไฟล์นี้ตรง ๆ กรุณาเปิดผ่านลิงก์เว็บที่ deploy แล้วแทน', 'error');
+    }
     return false;
   }
 }
 
 /* ======================================================================
-   ZONE: โหลด/รีเฟรชข้อมูลจาก IndexedDB (records) + data.js (members/areas)
+   ZONE: โหลด/รีเฟรชข้อมูลจาก IndexedDB (records) + master.json (members/areas)
    ====================================================================== */
 async function loadAll(){
-  const [records] = await Promise.all([idbGetAll('records')]);
-  loadMaster();
+  const [, records] = await Promise.all([loadMaster(), idbGetAll('records')]);
   DBX.records = records.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
 }
 function refreshMembers(){
@@ -1143,11 +1172,36 @@ function renderStartScreen(){
 }
 function renderInspectorOptions(){
   const ddIns = document.getElementById('ddInspector');
-  const dl = document.getElementById('inspectorList');
   const members = membersByDepartment(state.department);
-  dl.innerHTML = members.map(m => `<option value="${escapeHtml(m.name)}">`).join('');
   ddIns.placeholder = members.length ? 'พิมพ์ค้นหาชื่อของคุณ...' : 'ไม่มีผู้ตรวจในแผนกนี้ ไปเพิ่มที่ตั้งค่า';
   if(!members.some(m => m.name === ddIns.value)) ddIns.value = '';
+}
+
+/* ======================================================================
+   ZONE: Custom autocomplete dropdown (แทน <datalist> ซึ่งมือถือหลายรุ่น/เบราว์เซอร์
+   ไม่แสดงผล เช่น iOS Safari ไม่รองรับเลย) — ใช้ div ลอยแทน กดเลือกได้ทุกอุปกรณ์
+   ====================================================================== */
+function setupAutocomplete(input, listEl, getOptions){
+  function render(){
+    const q = (input.value || '').trim().toLowerCase();
+    const all = getOptions();
+    const matches = q ? all.filter(o => o.toLowerCase().includes(q)) : all;
+    listEl.innerHTML = matches.length
+      ? matches.slice(0, 50).map(o => `<div class="autocomplete-item" data-value="${escapeHtml(o)}">${escapeHtml(o)}</div>`).join('')
+      : `<div class="autocomplete-empty">ไม่พบรายการที่ตรงกัน</div>`;
+    listEl.classList.remove('hidden');
+  }
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', () => { setTimeout(() => listEl.classList.add('hidden'), 150); });
+  listEl.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.autocomplete-item');
+    if(!item) return;
+    e.preventDefault();
+    input.value = item.dataset.value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    listEl.classList.add('hidden');
+  });
 }
 
 /* ======================================================================
@@ -1383,11 +1437,44 @@ function exportBackupJson(){
   downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }), `duty-check-records-backup_${state.date}.json`);
 }
 function exportMasterJson(){
-  // ดาวน์โหลดรายการปัจจุบัน (รวมรายการที่เพิ่มชั่วคราวในเครื่องนี้ ถ้ามี) เพื่อส่งให้ Dev
-  // เอาไปใส่ใน data.js (window.MASTER_DATA) เอง — ไฟล์นี้ไม่ได้ถูกใช้โดยแอปโดยตรง
   const data = { members: DBX.members, areas: DBX.areas };
-  downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }), 'master-data-for-dev.json');
-  showToast('ดาวน์โหลดไฟล์แล้ว — ส่งไฟล์นี้ให้ Dev ใส่ใน data.js (window.MASTER_DATA) แล้ว commit ขึ้น GitHub', 'success');
+  downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }), 'master.json');
+  showToast('ดาวน์โหลด master.json แล้ว — เอาไปอัปโหลดทับไฟล์เดิมในเว็บ เพื่อให้ทุกคนเห็นรายการที่อัปเดต', 'success');
+}
+
+let syncInFlight = false;
+async function syncMasterToServer(btn){
+  if(syncInFlight) return;
+  if(!SYNC_WORKER_URL || SYNC_WORKER_URL.includes('PASTE_YOUR_WORKER_URL_HERE')){
+    showToast('ยังไม่ได้ตั้งค่าตัวช่วยบันทึกอัตโนมัติ (SYNC_WORKER_URL) — ใช้ปุ่ม "ส่งออก master.json (วิธีเดิม)" ไปก่อนได้', 'error');
+    return;
+  }
+  const pin = prompt('กรอก PIN แอดมินเพื่อบันทึกรายชื่อ/พื้นที่ขึ้นเว็บ:');
+  if(pin === null) return;
+  if(!pin.trim()){ showToast('กรุณากรอก PIN', 'error'); return; }
+
+  syncInFlight = true;
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+  try{
+    const res = await fetch(SYNC_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pin.trim(), members: DBX.members, areas: DBX.areas }),
+    });
+    let data = {};
+    try{ data = await res.json(); }catch(e){}
+    if(!res.ok){
+      showToast((data && data.error) ? data.error : 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง หรือใช้ปุ่ม "ส่งออก master.json" แทน', 'error');
+      return;
+    }
+    showToast('บันทึกขึ้นเว็บสำเร็จ! ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที', 'success');
+  }catch(e){
+    showToast('เชื่อมต่อไม่สำเร็จ (' + e.message + ') — ลองใช้ปุ่ม "ส่งออก master.json" แทน', 'error');
+  }finally{
+    syncInFlight = false;
+    if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
 }
 async function clearAllData(){
   if(!confirm('ลบผลตรวจ/รูปทั้งหมดในเครื่องนี้ใช่หรือไม่? (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) การลบนี้กู้คืนไม่ได้')) return;
@@ -1547,14 +1634,13 @@ async function handleShareEmail(){
    ZONE: SETTINGS - ผู้ตรวจ (Members)
    ====================================================================== */
 function renderMemberSettings(){
-  document.getElementById('deptList').innerHTML = distinctDepartments().map(d => `<option value="${escapeHtml(d)}">`).join('');
   const wrap = document.getElementById('memberList');
   if(!DBX.members.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีรายชื่อผู้ตรวจ</div>`; return; }
   wrap.innerHTML = [...DBX.members].sort((a,b) => (a.department||'').localeCompare(b.department||'') || a.name.localeCompare(b.name))
     .map(m => `<div class="list-row"><div class="info"><b>${escapeHtml(m.name)}</b><span>${escapeHtml(m.department||'-')}</span></div><button class="iconbtn-mini del" data-id="${m.id}">🗑</button></div>`).join('');
   wrap.querySelectorAll('.del').forEach(b => {
     b.onclick = () => {
-      if(!confirm('ลบผู้ตรวจคนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)')) return;
+      if(!confirm('ลบผู้ตรวจคนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(ต้องกด "ส่งออก master.json" แล้วอัปโหลดทับ ถึงจะมีผลกับทุกคน)')) return;
       DBX.members = DBX.members.filter(m => m.id !== b.dataset.id);
       refreshMembers();
     };
@@ -1567,7 +1653,7 @@ function addMember(){
   DBX.members.push({ id: uid(), name, department: dept });
   document.getElementById('newMemberName').value = '';
   document.getElementById('newMemberDept').value = '';
-  showToast('เพิ่มผู้ตรวจแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  showToast('เพิ่มผู้ตรวจแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — กด "ส่งออก master.json" เพื่อให้ทุกคนเห็น)', 'success');
   refreshMembers();
 }
 
@@ -1575,14 +1661,13 @@ function addMember(){
    ZONE: SETTINGS - พื้นที่ / โซน (Areas)
    ====================================================================== */
 function renderAreaSettings(){
-  document.getElementById('locList').innerHTML = distinctLocations().map(l => `<option value="${escapeHtml(l)}">`).join('');
   const wrap = document.getElementById('areaList');
   if(!DBX.areas.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีข้อมูลพื้นที่/โซน</div>`; return; }
   wrap.innerHTML = [...DBX.areas].sort((a,b) => a.location.localeCompare(b.location) || (a.order||0)-(b.order||0))
     .map(a => `<div class="list-row"><div class="info"><b>${escapeHtml(a.location)}</b><span>${escapeHtml(a.zone)}</span></div><button class="iconbtn-mini del" data-id="${a.id}">🗑</button></div>`).join('');
   wrap.querySelectorAll('.del').forEach(b => {
     b.onclick = () => {
-      if(!confirm('ลบพื้นที่/โซนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)')) return;
+      if(!confirm('ลบพื้นที่/โซนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(ต้องกด "ส่งออก master.json" แล้วอัปโหลดทับ ถึงจะมีผลกับทุกคน)')) return;
       DBX.areas = DBX.areas.filter(a => a.id !== b.dataset.id);
       refreshAreas();
     };
@@ -1595,7 +1680,7 @@ function addArea(){
   const order = DBX.areas.filter(a => a.location === location).length;
   DBX.areas.push({ id: uid(), location, zone, order });
   document.getElementById('newAreaZone').value = '';
-  showToast('เพิ่มพื้นที่/โซนแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  showToast('เพิ่มพื้นที่/โซนแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — กด "ส่งออก master.json" เพื่อให้ทุกคนเห็น)', 'success');
   refreshAreas();
 }
 
@@ -1623,6 +1708,21 @@ function switchSettingsSubtab(tab){
 function wireEvents(){
   document.getElementById('ddDepartment').addEventListener('change', (e) => { state.department = e.target.value; renderInspectorOptions(); });
   document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; });
+  setupAutocomplete(
+    document.getElementById('ddInspector'),
+    document.getElementById('inspectorAutoList'),
+    () => membersByDepartment(state.department).map(m => m.name)
+  );
+  setupAutocomplete(
+    document.getElementById('newMemberDept'),
+    document.getElementById('deptAutoList'),
+    () => distinctDepartments()
+  );
+  setupAutocomplete(
+    document.getElementById('newAreaLocation'),
+    document.getElementById('locAutoList'),
+    () => distinctLocations()
+  );
 
   document.getElementById('dpDate').addEventListener('change', (e) => { state.date = e.target.value; renderLocationsGrid(); });
 
@@ -1651,6 +1751,8 @@ function wireEvents(){
   document.getElementById('btnAddArea').addEventListener('click', addArea);
   document.getElementById('btnExportMaster').addEventListener('click', exportMasterJson);
   document.getElementById('btnExportMaster2').addEventListener('click', exportMasterJson);
+  document.getElementById('btnSyncMaster').addEventListener('click', (e) => syncMasterToServer(e.currentTarget));
+  document.getElementById('btnSyncMaster2').addEventListener('click', (e) => syncMasterToServer(e.currentTarget));
   document.getElementById('btnExportJson').addEventListener('click', exportBackupJson);
   document.getElementById('btnClearData').addEventListener('click', clearAllData);
 
