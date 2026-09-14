@@ -488,13 +488,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <div id="issueFields" class="hidden">
         <div class="field">
           <label>ประเภทปัญหา</label>
-          <select id="ddIssueType">
-            <option value="ลมรั่ว">ลมรั่ว</option>
-            <option value="ปิดน้ำ">ปิดน้ำ</option>
-            <option value="ไฟเสีย">ไฟเสีย</option>
-            <option value="GMP">GMP</option>
-            <option value="อื่นๆ">อื่นๆ</option>
-          </select>
+          <select id="ddIssueType"></select>
         </div>
         <div class="field">
           <label>รายละเอียดเพิ่มเติม</label>
@@ -532,6 +526,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <div class="subtabs">
         <button class="active" data-subtab="members">ผู้ตรวจ</button>
         <button data-subtab="areas">พื้นที่/โซน</button>
+        <button data-subtab="issues">ประเภทปัญหา</button>
         <button data-subtab="data">ข้อมูล</button>
       </div>
 
@@ -570,6 +565,22 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
           <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.areas</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
           <button class="btn ghost" id="btnExportMaster2">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+        </div>
+      </div>
+
+      <div id="settings-issues" class="settings-panel hidden">
+        <div class="card" style="background:var(--sky-100);">
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
+        </div>
+        <div class="card">
+          <div class="field"><label>ประเภทปัญหา</label><input type="text" id="newIssueType" placeholder="เช่น ลมรั่ว"></div>
+          <button class="btn primary" id="btnAddIssueType">+ เพิ่มประเภทปัญหา (ชั่วคราว)</button>
+        </div>
+        <div id="issueTypeList"></div>
+        <div class="card">
+          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
+          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.issueTypes</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
+          <button class="btn ghost" id="btnExportMaster3">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
         </div>
       </div>
 
@@ -1103,7 +1114,8 @@ function idbClearRecords(){
 /* ======================================================================
    ZONE: CONSTANTS & GLOBAL STATE
    ====================================================================== */
-const DBX = { members: [], areas: [], records: [] };
+const DBX = { members: [], areas: [], issueTypes: [], records: [] };
+const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
 const state = {
   date: todayStr(),
   department: '',
@@ -1156,10 +1168,12 @@ function loadMaster(){
     if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
     DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
+    // issueTypes เป็นของใหม่ — ถ้า data.js ยังไม่ได้อัปเดตให้มีรายการนี้ ใช้ค่าเริ่มต้นไปก่อน
+    DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
     return true;
   }catch(e){
     console.error('loadMaster failed', e);
-    DBX.members = []; DBX.areas = [];
+    DBX.members = []; DBX.areas = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice();
     showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js) ไม่สำเร็จ: ' + e.message, 'error');
     return false;
   }
@@ -1179,6 +1193,9 @@ function refreshMembers(){
 }
 function refreshAreas(){
   renderLocationsGrid(); renderAreaSettings(); renderHistoryFilters();
+}
+function refreshIssueTypes(){
+  renderIssueTypeOptions(); renderIssueTypeSettings();
 }
 async function refreshRecords(){
   DBX.records = (await idbGetAll('records')).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
@@ -1525,7 +1542,7 @@ function exportBackupJson(){
 function exportMasterJson(){
   // ดาวน์โหลดรายการปัจจุบัน (รวมรายการที่เพิ่มชั่วคราวในเครื่องนี้ ถ้ามี) เพื่อส่งให้ Dev
   // เอาไปใส่ใน data.js (window.MASTER_DATA) เอง — ไฟล์นี้ไม่ได้ถูกใช้โดยแอปโดยตรง
-  const data = { members: DBX.members, areas: DBX.areas };
+  const data = { members: DBX.members, areas: DBX.areas, issueTypes: DBX.issueTypes };
   downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }), 'master-data-for-dev.json');
   showToast('ดาวน์โหลดไฟล์แล้ว — ส่งไฟล์นี้ให้ Dev ใส่ใน data.js (window.MASTER_DATA) แล้ว commit ขึ้น GitHub', 'success');
 }
@@ -1765,6 +1782,38 @@ function addArea(){
 }
 
 /* ======================================================================
+   ZONE: SETTINGS - ประเภทปัญหา (Issue Types) — มาจาก data.js เช่นเดียวกับผู้ตรวจ/พื้นที่
+   ====================================================================== */
+function renderIssueTypeOptions(){
+  const sel = document.getElementById('ddIssueType');
+  const prev = sel.value;
+  sel.innerHTML = DBX.issueTypes.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  if(DBX.issueTypes.includes(prev)) sel.value = prev;
+}
+function renderIssueTypeSettings(){
+  const wrap = document.getElementById('issueTypeList');
+  if(!DBX.issueTypes.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีประเภทปัญหา</div>`; return; }
+  wrap.innerHTML = DBX.issueTypes
+    .map(t => `<div class="list-row"><div class="info"><b>${escapeHtml(t)}</b></div><button class="iconbtn-mini del" data-value="${escapeHtml(t)}">🗑</button></div>`).join('');
+  wrap.querySelectorAll('.del').forEach(b => {
+    b.onclick = () => {
+      if(!confirm('ลบประเภทปัญหานี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)')) return;
+      DBX.issueTypes = DBX.issueTypes.filter(t => t !== b.dataset.value);
+      refreshIssueTypes();
+    };
+  });
+}
+function addIssueType(){
+  const value = document.getElementById('newIssueType').value.trim();
+  if(!value){ showToast('กรุณากรอกชื่อประเภทปัญหา', 'error'); return; }
+  if(DBX.issueTypes.includes(value)){ showToast('มีประเภทปัญหานี้อยู่แล้ว', 'error'); return; }
+  DBX.issueTypes.push(value);
+  document.getElementById('newIssueType').value = '';
+  showToast('เพิ่มประเภทปัญหาแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  refreshIssueTypes();
+}
+
+/* ======================================================================
    ZONE: MODAL HELPERS + TAB SWITCHING
    ====================================================================== */
 function showModal(id){ document.getElementById(id).classList.remove('hidden'); }
@@ -1777,9 +1826,10 @@ function switchMainTab(tab){
 }
 function switchSettingsSubtab(tab){
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.dataset.subtab === tab));
-  ['members','areas','data'].forEach(t => document.getElementById('settings-'+t).classList.toggle('hidden', t !== tab));
+  ['members','areas','issues','data'].forEach(t => document.getElementById('settings-'+t).classList.toggle('hidden', t !== tab));
   if(tab === 'members') renderMemberSettings();
   if(tab === 'areas') renderAreaSettings();
+  if(tab === 'issues') renderIssueTypeSettings();
 }
 
 /* ======================================================================
@@ -1829,8 +1879,10 @@ function wireEvents(){
 
   document.getElementById('btnAddMember').addEventListener('click', addMember);
   document.getElementById('btnAddArea').addEventListener('click', addArea);
+  document.getElementById('btnAddIssueType').addEventListener('click', addIssueType);
   document.getElementById('btnExportMaster').addEventListener('click', exportMasterJson);
   document.getElementById('btnExportMaster2').addEventListener('click', exportMasterJson);
+  document.getElementById('btnExportMaster3').addEventListener('click', exportMasterJson);
   document.getElementById('btnExportJson').addEventListener('click', exportBackupJson);
   document.getElementById('btnClearData').addEventListener('click', clearAllData);
 
@@ -1871,6 +1923,8 @@ loadAll().then(() => {
   renderLocationsGrid();
   renderMemberSettings();
   renderAreaSettings();
+  renderIssueTypeOptions();
+  renderIssueTypeSettings();
   renderHistoryFilters();
   renderHistoryTable();
 }).catch(e => {
