@@ -1222,7 +1222,8 @@ const state = {
   inspectorName: '',
   selectedLocation: null,
   selectedZone: null,
-  pendingPhotos: [],
+  pendingPhotos: [], // ผสมกันได้ทั้ง File (รูปใหม่ยังไม่บีบอัด) และ string data URL (รูปเดิมตอนแก้ไขจุดที่ตรวจแล้ว)
+  editRecordId: null, // id ของผลตรวจที่กำลังแก้ไข, null = กำลังตรวจจุดใหม่ (ยังไม่เคยบันทึก)
   // ---- ใช้เฉพาะ modal บันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร (แยกจาก pendingPhotos ด้านบน
   // เพราะเป็นคนละฟอร์มกัน ไม่อยากให้รูปที่แนบค้างของฟอร์มหนึ่งไปปนกับอีกฟอร์ม) ----
   eventLogType: null,   // 'store' | 'machine' — ประเภท modal ที่กำลังเปิดอยู่
@@ -1481,34 +1482,49 @@ function renderZonesBody(){
   const zones = zonesOfLocation(loc).sort((a,b) => (a.order||0)-(b.order||0));
   if(!zones.length){ body.innerHTML = `<div class="empty-hint">พื้นที่นี้ยังไม่มีโซน</div>`; return; }
   body.innerHTML = zones.map(z => {
-    const rec = recordsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone);
+    // หา record ของ "วันนี้" ก่อน ถ้าไม่เจอลองหา record ล่าสุดของจุดนี้ไม่จำกัดวันที่ —
+    // เผื่อกรณีตรวจจุดนี้ไว้วันอื่นแล้วยังไม่ได้ตรวจซ้ำวันนี้ ก็ยังกดแก้ไขของเดิมได้เช่นกัน
+    const rec = recordsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone)
+      || DBX.records.filter(r => r.location === loc && r.zone === z.zone && (r.recordType||'inspection') === 'inspection')
+        .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''))[0];
     return `<div class="zone-row">
       <span class="zone-name">${escapeHtml(z.zone)}</span>
       ${rec
-        ? `<button class="zone-tag done" data-view="${rec.id}">✅ ตรวจแล้ว</button>`
+        ? `<button class="zone-tag done" data-edit="${rec.id}">✅ ตรวจแล้ว (แก้ไข)</button>`
         : `<button class="zone-tag pending" data-zone="${escapeHtml(z.zone)}">รอตรวจ →</button>`}
     </div>`;
   }).join('');
   body.querySelectorAll('button.zone-tag.pending').forEach(btn => { btn.onclick = () => openInspectionForm(loc, btn.dataset.zone); });
-  body.querySelectorAll('button.zone-tag.done').forEach(btn => { btn.onclick = () => viewRecordPhotos(btn.dataset.view); });
+  // จุดที่ตรวจแล้ว: กดเข้าไปเปิดฟอร์มเดิมพร้อมข้อมูล/รูปที่เคยกรอกไว้ให้แก้ไขต่อได้เลย
+  // (ไม่ใช่แค่ดูรูปอย่างเดียวเหมือนเดิม) — ผู้ใช้ขอให้แก้ไขจุดที่บันทึกไปแล้วได้
+  body.querySelectorAll('button.zone-tag.done').forEach(btn => { btn.onclick = () => openInspectionForm(loc, DBX.records.find(r=>r.id===btn.dataset.edit).zone, btn.dataset.edit); });
 }
 
 /* ======================================================================
    ZONE: MODAL - ฟอร์มบันทึกผลตรวจ + บีบอัดรูปก่อนบันทึก
    ====================================================================== */
-// เปิดฟอร์มตรวจสำหรับจุด (loc, zone) ที่เลือก — เคลียร์ฟอร์มให้ว่างทุกครั้งที่เปิด
-function openInspectionForm(loc, zone){
+// เปิดฟอร์มตรวจสำหรับจุด (loc, zone) ที่เลือก — recordId ว่าง = ตรวจจุดใหม่ (ฟอร์มว่างเปล่า),
+// มีค่า = แก้ไขผลตรวจเดิม (ดึงผลการตรวจ/ประเภทปัญหา/รายละเอียด/รูปที่เคยแนบไว้มาเติมให้ครบ)
+function openInspectionForm(loc, zone, recordId){
   state.selectedZone = zone;
-  state.pendingPhotos = [];
-  document.getElementById('formTitle').textContent = `${loc} : ${zone}`;
-  document.getElementById('pillStatus').querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
-  document.getElementById('pillWorker').querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
-  document.getElementById('issueFields').classList.add('hidden');
-  document.getElementById('ddIssueType').selectedIndex = 0;
-  document.getElementById('txtDescription').value = '';
+  state.editRecordId = recordId || null;
+  const rec = recordId ? DBX.records.find(r => r.id === recordId) : null;
+  // รูปเดิม (string data URL) ผสมกับรูปใหม่ที่จะเพิ่ม (File) อยู่ใน array เดียวกันได้ —
+  // แยกชนิดกันตอนบันทึกจริงใน submitInspectionForm()
+  state.pendingPhotos = (rec && rec.photos) ? rec.photos.slice() : [];
+
+  document.getElementById('formTitle').textContent = rec ? `${loc} : ${zone} (แก้ไข)` : `${loc} : ${zone}`;
+  document.getElementById('pillStatus').querySelectorAll('.pill').forEach(p => p.classList.toggle('selected', !!rec && p.dataset.value === rec.isNormal));
+  document.getElementById('pillWorker').querySelectorAll('.pill').forEach(p => p.classList.toggle('selected', !!rec && p.dataset.value === rec.worker));
+  const isIssue = !!rec && rec.isNormal === 'พบสิ่งผิดปกติ';
+  document.getElementById('issueFields').classList.toggle('hidden', !isIssue);
+  document.getElementById('ddIssueType').value = (rec && rec.issueType) || '';
+  if(document.getElementById('ddIssueType').selectedIndex < 0) document.getElementById('ddIssueType').selectedIndex = 0;
+  document.getElementById('txtDescription').value = (rec && rec.description) || '';
   document.getElementById('filePhotos').value = '';
-  document.getElementById('attachList').innerHTML = '';
+  renderAttachPreview();
   document.getElementById('uploadProgress').classList.add('hidden');
+  document.getElementById('btnSaveForm').textContent = rec ? 'บันทึกการแก้ไข' : 'บันทึกและตรวจจุดถัดไป';
   showModal('modalForm');
 }
 // อ่านค่าที่เลือกอยู่ในกลุ่มปุ่ม pill (เช่น #pillStatus, #pillWorker) — คืนค่าว่างถ้ายังไม่เลือก
@@ -1541,16 +1557,18 @@ function compressImage(file, maxDim = 1280, quality = 0.65){
   });
 }
 // วาดรูปตัวอย่างของรูปที่แนบไว้แต่ยังไม่กดบันทึก (state.pendingPhotos) พร้อมปุ่มลบทีละรูป
+// รองรับทั้ง File (รูปใหม่ยังไม่บีบอัด) และ string data URL (รูปเดิมตอนเปิดมาแก้ไขจุดที่ตรวจแล้ว)
 function renderAttachPreview(){
   const wrap = document.getElementById('attachList');
   wrap.innerHTML = state.pendingPhotos.map((f, i) => {
-    const url = URL.createObjectURL(f);
+    const url = (typeof f === 'string') ? f : URL.createObjectURL(f);
     return `<div class="attach-thumb"><img src="${url}"><button class="rm" data-i="${i}">✕</button></div>`;
   }).join('');
   wrap.querySelectorAll('.rm').forEach(b => { b.onclick = () => { state.pendingPhotos.splice(Number(b.dataset.i),1); renderAttachPreview(); }; });
 }
-// กด "บันทึกและตรวจจุดถัดไป": บีบอัดรูปที่แนบทั้งหมด ประกอบเป็น record เดียว
-// แล้วบันทึกลง IndexedDB (store 'records') — นี่คือจุดเดียวที่ "เขียนข้อมูล" ของแอปนี้
+// กด "บันทึกและตรวจจุดถัดไป"/"บันทึกการแก้ไข": บีบอัดเฉพาะรูปใหม่ (File) ส่วนรูปเดิม
+// (string, ตอนแก้ไขจุดที่ตรวจแล้ว) ใช้ค่าเดิมไม่บีบอัดซ้ำ ประกอบเป็น record เดียว
+// แล้วบันทึกลง IndexedDB (store 'records', id เดิมถ้าเป็นการแก้ไข, id ใหม่ถ้าเป็นจุดใหม่)
 async function submitInspectionForm(){
   const status = currentPillValue('pillStatus');
   const worker = currentPillValue('pillWorker');
@@ -1561,22 +1579,27 @@ async function submitInspectionForm(){
 
   const btn = document.getElementById('btnSaveForm');
   const progress = document.getElementById('uploadProgress');
+  const oldText = btn.textContent;
   btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
   try{
     const photos = [];
     if(state.pendingPhotos.length){
       progress.classList.remove('hidden');
       for(let i=0;i<state.pendingPhotos.length;i++){
+        const p = state.pendingPhotos[i];
+        if(typeof p === 'string'){ photos.push(p); continue; } // รูปเดิม ไม่ต้องบีบอัดซ้ำ
         progress.textContent = `กำลังบีบอัดรูป ${i+1}/${state.pendingPhotos.length}...`;
-        photos.push(await compressImage(state.pendingPhotos[i]));
+        photos.push(await compressImage(p));
       }
       progress.classList.add('hidden');
     }
+    const existing = state.editRecordId ? DBX.records.find(r => r.id === state.editRecordId) : null;
     const record = {
-      id: uid(),
-      checkDate: state.date,
-      inspector: state.inspectorName,
-      department: state.department,
+      id: state.editRecordId || uid(),
+      recordType: 'inspection',
+      checkDate: existing ? existing.checkDate : state.date,
+      inspector: existing ? existing.inspector : state.inspectorName,
+      department: existing ? existing.department : state.department,
       location: state.selectedLocation,
       zone: state.selectedZone,
       isNormal: status,
@@ -1584,17 +1607,18 @@ async function submitInspectionForm(){
       issueType,
       description,
       photos,
-      createdAt: new Date().toISOString(),
+      createdAt: existing ? (existing.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
     await idbPut('records', record);
     showToast('บันทึกข้อมูลสำเร็จแล้ว', 'success');
     hideModal('modalForm');
+    state.editRecordId = null;
     await refreshRecords();
   }catch(e){
     console.error(e);
     showToast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
   }finally{
-    btn.disabled = false; btn.textContent = 'บันทึกและตรวจจุดถัดไป';
+    btn.disabled = false; btn.textContent = oldText;
     progress.classList.add('hidden');
   }
 }
