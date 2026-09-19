@@ -240,6 +240,9 @@ input,select,textarea{font-family:inherit;}
 }
 .loc-btn.done{background:linear-gradient(135deg, var(--success), #156b3b);}
 .loc-btn.progress{background:linear-gradient(135deg, var(--teal-600), var(--teal-800));}
+/* การ์ด "เบิกของสโตร์"/"ขนย้ายเครื่องจักร" ในกริดเดียวกับปุ่มพื้นที่ — ใช้สีส้มโคอรัล (CI)
+   แยกจากปุ่มพื้นที่ (เหลือง/ฟ้า/เขียว) เพราะเป็นคนละประเภทงาน ไม่ใช่สถานะรอตรวจ/ตรวจแล้ว */
+.loc-btn.eventlog{background:linear-gradient(135deg, var(--coral-500), var(--coral-600));}
 .loc-btn .loc-name{font-size:15px;font-weight:700;}
 .loc-status{
   font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.28);
@@ -317,6 +320,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 .list-row .info span{font-size:12px;color:var(--ink-500);}
 .iconbtn-mini{border:none;background:var(--paper);width:30px;height:30px;border-radius:var(--radius-sm);font-size:14px;}
 .iconbtn-mini.del{background:var(--danger-bg);color:var(--danger);}
+.iconbtn-mini.edit{background:var(--sky-100);color:var(--brand);}
 
 /* ---- toast ---- */
 #toast{
@@ -330,7 +334,6 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 .empty-hint{text-align:center;color:var(--ink-500);font-size:13px;padding:24px 10px;}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
 .photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-md);background:var(--border-soft);}
-.app-footer{padding:14px 16px 22px;text-align:center;color:var(--ink-500);font-size:12px;}
 </style>
 
 <body>
@@ -423,7 +426,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <div class="table-wrap">
         <table id="histTable">
           <thead><tr>
-            <th>วันที่</th><th>ผู้ตรวจ</th><th>แผนก</th><th>พื้นที่</th><th>โซน</th>
+            <th>ประเภท</th><th>วันที่</th><th>ผู้ตรวจ</th><th>แผนก</th><th>พื้นที่</th><th>โซน</th>
             <th>สถานะ</th><th>ประเภทปัญหา</th><th>รายละเอียด</th><th>ผู้ปฏิบัติงาน</th><th>รูป</th><th>บันทึกเมื่อ</th><th></th>
           </tr></thead>
           <tbody id="histTbody"></tbody>
@@ -492,6 +495,67 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
   <div class="modal-sheet">
     <div class="modal-head"><h3>รูปที่แนบ</h3><button class="modal-close" data-close="modalPhotos">✕</button></div>
     <div class="modal-body"><div id="photoGrid" class="photo-grid"></div></div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EVENT LOG (เบิกของสโตร์ / ขนย้ายเครื่องจักร) =================
+     modal เดียวใช้ร่วมกัน 2 ประเภท แยกด้วย state.eventLogType — มี 2 มุมมองสลับกันภายใน
+     modal เดียวกัน (ไม่เปิด modal ซ้อน modal): eventLogListView (รายการที่มีอยู่ + ปุ่มเพิ่ม)
+     และ eventLogFormView (ฟอร์มกรอก/แก้ไข 1 รายการ) — mirrors ลักษณะการสลับมุมมองของ
+     modalZones/modalForm แต่รวบเป็น modal เดียวเพราะทั้งสองมุมมองเป็นเรื่องเดียวกัน ==== -->
+<div id="modalEventLog" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-head"><h3 id="eventLogTitle">บันทึก</h3><button class="modal-close" data-close="modalEventLog">✕</button></div>
+    <div class="modal-body">
+
+      <div id="eventLogListView">
+        <button class="btn primary" id="btnAddEventLog">+ เพิ่มรายการ</button>
+        <div id="eventLogList" style="margin-top:10px;"></div>
+      </div>
+
+      <div id="eventLogFormView" class="hidden">
+        <button class="btn ghost" id="btnEventLogBack" style="margin-bottom:12px;">← กลับไปหน้ารายการ</button>
+        <div class="row">
+          <div class="field"><label>ฝ่าย</label><select id="ddEventFaction"></select></div>
+          <div class="field"><label>แผนก</label><select id="ddEventDept"></select></div>
+        </div>
+
+        <!-- ฟิลด์เฉพาะ "เบิกของสโตร์" -->
+        <div id="eventFieldsStore">
+          <div class="field"><label>ชื่อผู้ขอเบิก</label><input type="text" id="evStoreRequester" placeholder="ชื่อ-สกุล"></div>
+          <div class="field"><label>รายการ</label><input type="text" id="evStoreItem" placeholder="ชื่อของที่เบิก"></div>
+          <div class="field"><label>จำนวน</label><input type="text" id="evStoreQty" placeholder="เช่น 2 ชิ้น"></div>
+          <div class="field"><label>สาเหตุ</label><input type="text" id="evStoreReason" placeholder="เหตุผลที่ต้องเบิก"></div>
+          <div class="field"><label>ผู้อนุมัติ</label><input type="text" id="evStoreApprover" placeholder="ชื่อผู้อนุมัติ"></div>
+        </div>
+
+        <!-- ฟิลด์เฉพาะ "ขนย้ายเครื่องจักร/อะไหล่" -->
+        <div id="eventFieldsMachine" class="hidden">
+          <div class="field">
+            <label>ประเภท</label>
+            <select id="evMachineType"><option value="เครื่องจักร">เครื่องจักร</option><option value="อะไหล่">อะไหล่</option></select>
+          </div>
+          <div class="field"><label>รายละเอียด</label><input type="text" id="evMachineDetail" placeholder="รายละเอียดสิ่งที่ขนย้าย"></div>
+          <div class="field"><label>จำนวน</label><input type="text" id="evMachineQty" placeholder="เช่น 1 เครื่อง"></div>
+          <div class="field"><label>สาเหตุ</label><input type="text" id="evMachineReason" placeholder="เหตุผลที่ต้องขนย้าย"></div>
+          <div class="field"><label>ผู้อนุมัติ</label><input type="text" id="evMachineApprover" placeholder="ชื่อผู้อนุมัติ"></div>
+          <div class="field"><label>หัวหน้าชุด รปภ ประจำวันหยุด</label><input type="text" id="evMachineGuardLead" placeholder="ชื่อหัวหน้าชุด รปภ"></div>
+        </div>
+
+        <div class="field">
+          <label>แนบรูปภาพ (จะบีบอัดให้อัตโนมัติก่อนบันทึก)</label>
+          <label for="fileEventPhotos" class="photo-capture-btn">
+            <span class="photo-capture-icon">📷</span>
+            <span class="photo-capture-text">แตะเพื่อถ่ายภาพ หรือเลือกรูปภาพ</span>
+          </label>
+          <input type="file" id="fileEventPhotos" accept="image/*" capture="environment" multiple class="visually-hidden">
+          <div class="attach-list" id="eventAttachList"></div>
+        </div>
+        <div class="upload-progress hidden" id="eventUploadProgress"></div>
+        <button class="btn primary" id="btnSaveEventLog">บันทึก</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -580,8 +644,6 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
     </div>
   </div>
 </div>
-
-<footer class="app-footer" aria-label="Application version">Version 1.0.0 · Updated 19 Sep 2026 · Copyright by AS Team</footer>
 
 <div id="toast" class="toast hidden"></div>
 
@@ -1152,7 +1214,7 @@ function idbClearRecords(){
            พื้นที่/โซนที่เพิ่งเลือก, รูปที่แนบไว้แต่ยังไม่กดบันทึก) อยู่แค่ระหว่าง
            เปิดหน้าเว็บ รีเฟรชแล้วรีเซ็ตใหม่ทั้งหมด
    ====================================================================== */
-const DBX = { members: [], areas: [], issueTypes: [], records: [] };
+const DBX = { members: [], areas: [], issueTypes: [], orgList: [], records: [] };
 const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
 const state = {
   date: todayStr(),
@@ -1161,6 +1223,11 @@ const state = {
   selectedLocation: null,
   selectedZone: null,
   pendingPhotos: [],
+  // ---- ใช้เฉพาะ modal บันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร (แยกจาก pendingPhotos ด้านบน
+  // เพราะเป็นคนละฟอร์มกัน ไม่อยากให้รูปที่แนบค้างของฟอร์มหนึ่งไปปนกับอีกฟอร์ม) ----
+  eventLogType: null,   // 'store' | 'machine' — ประเภท modal ที่กำลังเปิดอยู่
+  eventEditId: null,    // id ของ record ที่กำลังแก้ไข, null = กำลังเพิ่มรายการใหม่
+  pendingEventPhotos: [], // ผสมกันได้ทั้ง File (รูปใหม่ยังไม่บีบอัด) และ string data URL (รูปเดิมตอนแก้ไข)
 };
 
 // วันที่วันนี้ตามเวลาเครื่อง รูปแบบ YYYY-MM-DD (ใช้เป็นค่าเริ่มต้นของ input[type=date])
@@ -1218,10 +1285,13 @@ function loadMaster(){
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
     // issueTypes เป็นของใหม่ — ถ้า data.js ยังไม่ได้อัปเดตให้มีรายการนี้ ใช้ค่าเริ่มต้นไปก่อน
     DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
+    // orgList (ฝ่าย/แผนกทั้งบริษัท) — ใช้เป็น dropdown ในฟอร์ม "เบิกของสโตร์"/"ขนย้ายเครื่องจักร"
+    // เท่านั้น ไม่เกี่ยวกับ department ของผู้ตรวจข้างบน (คนละรายการกันโดยตั้งใจ)
+    DBX.orgList = Array.isArray(data.orgList) ? data.orgList.slice() : [];
     return true;
   }catch(e){
     console.error('loadMaster failed', e);
-    DBX.members = []; DBX.areas = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice();
+    DBX.members = []; DBX.areas = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice(); DBX.orgList = [];
     showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js) ไม่สำเร็จ: ' + e.message, 'error');
     return false;
   }
@@ -1251,12 +1321,18 @@ function refreshAreas(){
 function refreshIssueTypes(){
   renderIssueTypeOptions(); renderIssueTypeSettings();
 }
+// เรียกหลังโหลด/แก้ DBX.orgList — เติม dropdown "ฝ่าย" ในฟอร์มบันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร
+// ใหม่ (orgList ไม่มีหน้าตั้งค่าให้แก้ในแอปเหมือน members/areas/issueTypes — แก้ได้ที่ data.js เท่านั้น)
+function refreshOrgList(){
+  renderEventFactionOptions();
+}
 // เรียกหลังบันทึก/ลบผลตรวจใน IndexedDB — โหลด records กลับมาใหม่แล้ว render
 // หน้าจอที่แสดงผลตรวจทั้งหมด (สถานะพื้นที่, popup โซนถ้าเปิดอยู่, ตารางประวัติ)
 async function refreshRecords(){
   DBX.records = (await idbGetAll('records')).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   renderLocationsGrid();
   if(!document.getElementById('modalZones').classList.contains('hidden')) renderZonesBody();
+  if(!document.getElementById('modalEventLog').classList.contains('hidden')) renderEventLogList();
   renderHistoryTable();
 }
 
@@ -1268,6 +1344,12 @@ function distinctDepartments(){ return [...new Set(DBX.members.map(m => (m.depar
 function membersByDepartment(dept){ return DBX.members.filter(m => (m.department||'') === dept); }
 function distinctLocations(){ return [...new Set(DBX.areas.map(a => a.location).filter(Boolean))]; }
 function zonesOfLocation(loc){ return DBX.areas.filter(a => a.location === loc); }
+// รายชื่อ "ฝ่าย" ที่ไม่ซ้ำจาก DBX.orgList — คงลำดับตามที่ปรากฏก่อน-หลังใน data.js (ไม่เรียง a-z)
+// เพราะ Set ใน JS คงลำดับ insertion ไว้ให้อยู่แล้ว ตรงกับที่ผู้ใช้ขอ (ไม่ต้องเรียงเอง)
+function distinctFactions(){ return [...new Set(DBX.orgList.map(o => o.faction).filter(Boolean))]; }
+// รายการ {faction, dept} ทั้งหมดของฝ่ายที่ระบุ (เรียงตามลำดับเดิมใน data.js) — ใช้เติม dropdown
+// "แผนก" แบบ cascading ในฟอร์มเบิกของสโตร์/ขนย้ายเครื่องจักร ตามฝ่ายที่เลือกไว้
+function deptsOfFaction(faction){ return DBX.orgList.filter(o => o.faction === faction); }
 function recordsOnDate(dateStr){ return DBX.records.filter(r => r.checkDate === dateStr); }
 // สถานะของพื้นที่หนึ่ง ๆ ในวันที่กำลังตรวจ (state.date): รอตรวจ/กำลังตรวจ/ตรวจครบแล้ว
 // return: { state: 'pending'|'progress'|'done', totalZones, checkedZones }
@@ -1352,20 +1434,32 @@ function setupAutocomplete(input, listEl, getOptions){
 function renderLocationsGrid(){
   const grid = document.getElementById('locationsGrid');
   const locs = distinctLocations();
-  if(!locs.length){
-    grid.innerHTML = `<div class="empty-hint" style="grid-column:1/-1;">ยังไม่มีข้อมูลพื้นที่/โซน ไปเพิ่มที่เมนูตั้งค่า → พื้นที่/โซน</div>`;
-    return;
-  }
-  grid.innerHTML = locs.map(loc => {
-    const st = locationStatus(loc);
-    const cls = 'loc-btn ' + (st.state === 'done' ? 'done' : st.state === 'progress' ? 'progress' : '');
-    let tag = '';
-    if(st.state === 'pending') tag = `<span class="loc-status pending">รอตรวจ</span>`;
-    else if(st.state === 'progress') tag = `<span class="loc-status progress">กำลังตรวจ ${st.checkedZones}/${st.totalZones}</span>`;
-    else tag = `<span class="loc-status">✅ ตรวจแล้ว</span>`;
-    return `<button class="${cls}" data-loc="${escapeHtml(loc)}"><span class="loc-name">${escapeHtml(loc)}</span>${tag}</button>`;
-  }).join('');
-  grid.querySelectorAll('.loc-btn').forEach(btn => { btn.onclick = () => openZonesModal(btn.dataset.loc); });
+  let html = !locs.length
+    ? `<div class="empty-hint" style="grid-column:1/-1;">ยังไม่มีข้อมูลพื้นที่/โซน ไปเพิ่มที่เมนูตั้งค่า → พื้นที่/โซน</div>`
+    : locs.map(loc => {
+        const st = locationStatus(loc);
+        const cls = 'loc-btn ' + (st.state === 'done' ? 'done' : st.state === 'progress' ? 'progress' : '');
+        let tag = '';
+        if(st.state === 'pending') tag = `<span class="loc-status pending">รอตรวจ</span>`;
+        else if(st.state === 'progress') tag = `<span class="loc-status progress">กำลังตรวจ ${st.checkedZones}/${st.totalZones}</span>`;
+        else tag = `<span class="loc-status">✅ ตรวจแล้ว</span>`;
+        return `<button class="${cls}" data-loc="${escapeHtml(loc)}"><span class="loc-name">${escapeHtml(loc)}</span>${tag}</button>`;
+      }).join('');
+  // การ์ดพิเศษ 2 อัน "เบิกของสโตร์"/"ขนย้ายเครื่องจักร" — ไม่ใช่ location จาก DBX.areas เหมือน
+  // ปุ่มด้านบน แต่เป็นทางเข้า modal บันทึกเหตุการณ์แยกต่างหาก (รายการอิสระ กรอกได้เรื่อยๆ
+  // ไม่ใช่ checklist ตายตัวแบบโซน จึงโชว์แค่จำนวนรายการทั้งหมด ไม่ใช่สถานะรอตรวจ/ตรวจแล้ว)
+  html += renderEventLogCard('store', '📦 เบิกของสโตร์');
+  html += renderEventLogCard('machine', '🚚 ขนย้ายเครื่องจักร/อะไหล่');
+  grid.innerHTML = html;
+  grid.querySelectorAll('.loc-btn[data-loc]').forEach(btn => { btn.onclick = () => openZonesModal(btn.dataset.loc); });
+  grid.querySelectorAll('.loc-btn[data-eventtype]').forEach(btn => { btn.onclick = () => openEventLogModal(btn.dataset.eventtype); });
+}
+// สร้าง markup การ์ด "เบิกของสโตร์"/"ขนย้ายเครื่องจักร" อันหนึ่ง — badge แสดงจำนวนรายการ
+// ทั้งหมดที่มี recordType ตรงกับ type นี้ใน DBX.records (ทุกวันที่ ไม่ใช่แค่วันนี้)
+function renderEventLogCard(type, label){
+  const count = DBX.records.filter(r => r.recordType === type).length;
+  const badge = count ? `${count} รายการ` : 'ยังไม่มีรายการ';
+  return `<button class="loc-btn eventlog" data-eventtype="${type}"><span class="loc-name">${label}</span><span class="loc-status">${badge}</span></button>`;
 }
 
 /* ======================================================================
@@ -1517,6 +1611,188 @@ function viewRecordPhotos(recordId){
 }
 
 /* ======================================================================
+   ZONE: MODAL - บันทึกเบิกของสโตร์ / ขนย้ายเครื่องจักร-อะไหล่ (ไม่ผูกกับพื้นที่/โซนเลย
+   เป็นทางเข้าคนละแบบจากปุ่มพื้นที่ — เก็บลง store 'records' เดียวกันแค่ recordType ต่างกัน
+   เพื่อให้ไปโผล่ในแท็บประวัติ + ออก Excel/PDF ได้เหมือนผลตรวจพื้นที่)
+   ====================================================================== */
+// เปิด modal บันทึกเหตุการณ์ (type: 'store' | 'machine') — เริ่มที่หน้ารายการเสมอ
+function openEventLogModal(type){
+  state.eventLogType = type;
+  document.getElementById('eventLogTitle').textContent = type === 'store' ? 'บันทึกเบิกของสโตร์' : 'บันทึกขนย้ายเครื่องจักร/อะไหล่';
+  showEventLogListView();
+  showModal('modalEventLog');
+}
+// สลับกลับไปหน้ารายการภายใน modal เดียวกัน (ไม่ปิด modal) แล้ว render รายการล่าสุด
+function showEventLogListView(){
+  document.getElementById('eventLogListView').classList.remove('hidden');
+  document.getElementById('eventLogFormView').classList.add('hidden');
+  renderEventLogList();
+}
+// วาดรายการบันทึกทั้งหมดของ state.eventLogType (ทุกวันที่ที่เคยกรอกไว้ ไม่ใช่แค่วันนี้ —
+// ผู้ใช้ระบุว่า "กรอกได้เรื่อยๆ ที่พบ" ไม่ผูกกับวันเดียว) พร้อมปุ่มแก้ไข/ลบต่อรายการ
+function renderEventLogList(){
+  const wrap = document.getElementById('eventLogList');
+  const type = state.eventLogType;
+  const rows = DBX.records.filter(r => r.recordType === type).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  if(!rows.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีรายการ</div>`; return; }
+  wrap.innerHTML = rows.map(r => {
+    const line1 = type === 'store' ? (r.itemList || '-') : (r.detail || '-');
+    const line2 = type === 'store'
+      ? `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | จำนวน ${r.quantity || '-'} | ผู้ขอเบิก ${r.requesterName || '-'}`
+      : `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | ${r.itemType || '-'} | จำนวน ${r.quantity || '-'}`;
+    return `<div class="list-row">
+      <div class="info"><b>${escapeHtml(line1)}</b><span>${escapeHtml(line2)}</span></div>
+      <button class="iconbtn-mini edit" data-id="${r.id}" title="แก้ไขรายการนี้">✏️</button>
+      <button class="iconbtn-mini del" data-id="${r.id}" title="ลบรายการนี้">🗑</button>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.edit').forEach(b => { b.onclick = () => openEventLogForm(b.dataset.id); });
+  wrap.querySelectorAll('.del').forEach(b => {
+    b.onclick = async () => {
+      if(!confirm('ลบรายการนี้ใช่หรือไม่?')) return;
+      try{ await idbDelete('records', b.dataset.id); await refreshRecords(); renderEventLogList(); }
+      catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+    };
+  });
+}
+// เติม dropdown "ฝ่าย" จาก DBX.orgList (คนละรายการกับ department ของผู้ตรวจโดยสิ้นเชิง)
+function renderEventFactionOptions(){
+  const sel = document.getElementById('ddEventFaction');
+  if(!sel) return;
+  sel.innerHTML = distinctFactions().map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+}
+// เติม dropdown "แผนก" แบบ cascading ตามฝ่ายที่เลือกไว้ — เรียกใหม่ทุกครั้งที่เปลี่ยนฝ่าย
+// (รีเซ็ตตัวเลือกแผนกใหม่ทั้งหมดเสมอ ไม่พยายามคงค่าเดิมข้ามฝ่าย)
+function renderEventDeptOptions(faction){
+  const sel = document.getElementById('ddEventDept');
+  sel.innerHTML = deptsOfFaction(faction).map(d => `<option value="${escapeHtml(d.dept)}">${escapeHtml(d.dept)}</option>`).join('');
+}
+// เปิดฟอร์มกรอก/แก้ไข 1 รายการ — recordId ว่าง = เพิ่มรายการใหม่ (ฟอร์มว่างเปล่า),
+// มีค่า = แก้ไขรายการเดิม (ดึงค่าที่เคยกรอกไว้ + รูปที่แนบไว้แล้วมาเติมให้ครบ)
+function openEventLogForm(recordId){
+  const type = state.eventLogType;
+  state.eventEditId = recordId || null;
+  const rec = recordId ? DBX.records.find(r => r.id === recordId) : null;
+  // รูปเดิม (string data URL) ผสมกับรูปใหม่ที่จะเพิ่ม (File) อยู่ใน array เดียวกันได้เลย —
+  // แยกชนิดกันตอนบันทึกจริงใน submitEventLogForm()
+  state.pendingEventPhotos = (rec && rec.photos) ? rec.photos.slice() : [];
+
+  renderEventFactionOptions();
+  const ddFaction = document.getElementById('ddEventFaction');
+  const ddDept = document.getElementById('ddEventDept');
+  ddFaction.value = rec ? (rec.faction || '') : (ddFaction.options[0] ? ddFaction.options[0].value : '');
+  renderEventDeptOptions(ddFaction.value);
+  if(rec) ddDept.value = rec.orgDept || '';
+
+  document.getElementById('eventFieldsStore').classList.toggle('hidden', type !== 'store');
+  document.getElementById('eventFieldsMachine').classList.toggle('hidden', type !== 'machine');
+
+  if(type === 'store'){
+    document.getElementById('evStoreRequester').value = rec ? (rec.requesterName || '') : '';
+    document.getElementById('evStoreItem').value = rec ? (rec.itemList || '') : '';
+    document.getElementById('evStoreQty').value = rec ? (rec.quantity || '') : '';
+    document.getElementById('evStoreReason').value = rec ? (rec.reason || '') : '';
+    document.getElementById('evStoreApprover').value = rec ? (rec.approver || '') : '';
+  } else {
+    document.getElementById('evMachineType').value = rec ? (rec.itemType || 'เครื่องจักร') : 'เครื่องจักร';
+    document.getElementById('evMachineDetail').value = rec ? (rec.detail || '') : '';
+    document.getElementById('evMachineQty').value = rec ? (rec.quantity || '') : '';
+    document.getElementById('evMachineReason').value = rec ? (rec.reason || '') : '';
+    document.getElementById('evMachineApprover').value = rec ? (rec.approver || '') : '';
+    document.getElementById('evMachineGuardLead').value = rec ? (rec.guardLead || '') : '';
+  }
+
+  document.getElementById('fileEventPhotos').value = '';
+  renderEventAttachPreview();
+  document.getElementById('eventUploadProgress').classList.add('hidden');
+  document.getElementById('btnSaveEventLog').textContent = rec ? 'บันทึกการแก้ไข' : 'บันทึก';
+
+  document.getElementById('eventLogListView').classList.add('hidden');
+  document.getElementById('eventLogFormView').classList.remove('hidden');
+}
+// วาดรูปตัวอย่างที่แนบไว้ในฟอร์มบันทึกเหตุการณ์ (state.pendingEventPhotos) — ต่างจาก
+// renderAttachPreview() ของฟอร์มตรวจพื้นที่ตรงที่ต้องรองรับทั้ง File (รูปใหม่) และ string
+// data URL (รูปเดิมตอนแก้ไขรายการ) ปนกันอยู่ใน array เดียว
+function renderEventAttachPreview(){
+  const wrap = document.getElementById('eventAttachList');
+  wrap.innerHTML = state.pendingEventPhotos.map((p, i) => {
+    const url = (typeof p === 'string') ? p : URL.createObjectURL(p);
+    return `<div class="attach-thumb"><img src="${url}"><button class="rm" data-i="${i}">✕</button></div>`;
+  }).join('');
+  wrap.querySelectorAll('.rm').forEach(b => { b.onclick = () => { state.pendingEventPhotos.splice(Number(b.dataset.i), 1); renderEventAttachPreview(); }; });
+}
+// กด "บันทึก"/"บันทึกการแก้ไข" — ตรวจแบบเบามือแค่ต้องเลือกฝ่าย+แผนกแล้ว (ผู้ใช้ขอไม่ให้
+// บังคับกรอกทุกช่อง เพราะเป็นการจดบันทึกตามที่พบจริงหน้างาน) บีบอัดเฉพาะรูปใหม่ (File)
+// ส่วนรูปเดิม (string, ตอนแก้ไข) ใช้ค่าเดิมไม่บีบอัดซ้ำ แล้ว idbPut ลง store 'records'
+// เดียวกับผลตรวจพื้นที่ (id เดิมถ้าเป็นการแก้ไข, id ใหม่ถ้าเป็นการเพิ่มรายการ)
+async function submitEventLogForm(){
+  const type = state.eventLogType;
+  const faction = document.getElementById('ddEventFaction').value;
+  const orgDept = document.getElementById('ddEventDept').value;
+  if(!faction || !orgDept){ showToast('กรุณาเลือกฝ่ายและแผนกก่อนกดบันทึก', 'error'); return; }
+
+  const btn = document.getElementById('btnSaveEventLog');
+  const progress = document.getElementById('eventUploadProgress');
+  const oldText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  try{
+    const photos = [];
+    if(state.pendingEventPhotos.length){
+      progress.classList.remove('hidden');
+      for(let i=0;i<state.pendingEventPhotos.length;i++){
+        const p = state.pendingEventPhotos[i];
+        if(typeof p === 'string'){ photos.push(p); continue; } // รูปเดิม ไม่ต้องบีบอัดซ้ำ
+        progress.textContent = `กำลังบีบอัดรูป ${i+1}/${state.pendingEventPhotos.length}...`;
+        photos.push(await compressImage(p));
+      }
+      progress.classList.add('hidden');
+    }
+
+    const existing = state.eventEditId ? DBX.records.find(r => r.id === state.eventEditId) : null;
+    const base = {
+      id: state.eventEditId || uid(),
+      recordType: type,
+      checkDate: state.date,
+      inspector: state.inspectorName,
+      department: state.department,
+      faction, orgDept, photos,
+      createdAt: existing ? (existing.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    };
+    const record = type === 'store'
+      ? Object.assign(base, {
+          requesterName: document.getElementById('evStoreRequester').value.trim(),
+          itemList: document.getElementById('evStoreItem').value.trim(),
+          quantity: document.getElementById('evStoreQty').value.trim(),
+          reason: document.getElementById('evStoreReason').value.trim(),
+          approver: document.getElementById('evStoreApprover').value.trim(),
+        })
+      : Object.assign(base, {
+          itemType: document.getElementById('evMachineType').value,
+          detail: document.getElementById('evMachineDetail').value.trim(),
+          quantity: document.getElementById('evMachineQty').value.trim(),
+          reason: document.getElementById('evMachineReason').value.trim(),
+          approver: document.getElementById('evMachineApprover').value.trim(),
+          guardLead: document.getElementById('evMachineGuardLead').value.trim(),
+        });
+
+    await idbPut('records', record);
+    showToast('บันทึกข้อมูลสำเร็จแล้ว', 'success');
+    await refreshRecords();
+    state.eventEditId = null;
+    state.pendingEventPhotos = [];
+    // กลับไปหน้ารายการแต่ไม่ปิด modal — ผู้ใช้ขอให้กรอกรายการถัดไปต่อได้ทันทีโดยไม่ต้องเปิด
+    // การ์ดใหม่ซ้ำ พร้อมเห็นรายการที่เพิ่งบันทึกยืนยันในลิสต์ทันที
+    showEventLogListView();
+  }catch(e){
+    console.error(e);
+    showToast('บันทึกไม่สำเร็จ: ' + e.message, 'error');
+  }finally{
+    btn.disabled = false; btn.textContent = oldText;
+    progress.classList.add('hidden');
+  }
+}
+
+/* ======================================================================
    ZONE: RENDER - ประวัติ / รายงาน — ทั้งหมดในโซนนี้อ่านจาก DBX.records
    (มาจาก IndexedDB) เท่านั้น ไม่มีข้อมูลจากที่อื่น
    ====================================================================== */
@@ -1539,10 +1815,47 @@ function filteredHistoryRecords(){
   return DBX.records.filter(r => {
     if(from && r.checkDate < from) return false;
     if(to && r.checkDate > to) return false;
-    if(loc && r.location !== loc) return false;
-    if(status && r.isNormal !== status) return false;
+    const type = r.recordType || 'inspection';
+    // ตัวกรอง "พื้นที่" มีตัวเลือกมาจาก distinctLocations() (Zone1..Zone13) เท่านั้น ไม่มี
+    // ตัวเลือกของ store/machine ปนอยู่ในนั้นเลย — ให้มีผลเฉพาะแถวตรวจพื้นที่ ส่วน store/machine
+    // ผ่านตัวกรองนี้เสมอไม่ว่าจะเลือกพื้นที่อะไรไว้ (ไม่งั้นจะหายไปจากตารางแบบไม่มีเหตุผล)
+    if(loc && type === 'inspection' && r.location !== loc) return false;
+    // ตัวกรอง "สถานะ" (ปกติ/พบสิ่งผิดปกติ) มีความหมายเฉพาะผลตรวจพื้นที่เช่นกัน (isNormal มีแค่
+    // ใน record ประเภทนี้) — ให้ store/machine ผ่านเสมอเช่นเดียวกัน
+    if(status && type === 'inspection' && r.isNormal !== status) return false;
     return true;
   });
+}
+// ป้ายกำกับ "ประเภท" ต่อแถวในตารางประวัติ — record เก่าที่ไม่มี recordType ถือเป็นผลตรวจพื้นที่
+// (backward-compat กับ record ที่บันทึกไว้ก่อนมีฟีเจอร์เบิกของ/ขนย้าย)
+function typeLabel(r){
+  const t = r.recordType || 'inspection';
+  if(t === 'store') return 'เบิกของสโตร์';
+  if(t === 'machine') return 'ขนย้ายเครื่องจักร/อะไหล่';
+  return 'ตรวจพื้นที่';
+}
+// แปลง record ให้พอดีกับคอลัมน์ตารางประวัติที่ออกแบบไว้สำหรับ "ผลตรวจพื้นที่" เดิม (พื้นที่/โซน/
+// ประเภทปัญหา/รายละเอียด/ผู้ปฏิบัติงาน) — record ประเภท store/machine ไม่มีฟิลด์พวกนี้ตรงๆ จึงแมป
+// ฟิลด์ที่ใกล้เคียงที่สุดลงคอลัมน์เดิมแทน (แทนที่จะเพิ่มคอลัมน์ใหม่อีก 5-6 คอลัมน์ที่ว่างเปล่า
+// เกือบตลอดเวลา): พื้นที่→ฝ่าย, โซน→แผนก, ประเภทปัญหา→ประเภทของ (เฉพาะ machine),
+// ผู้ปฏิบัติงาน→ผู้ขอเบิก/หัวหน้าชุด รปภ, รายละเอียด→สรุปฟิลด์ที่เหลือรวมกันเป็นข้อความเดียว
+function historyRowView(r){
+  const type = r.recordType || 'inspection';
+  if(type === 'inspection'){
+    return { location: r.location, zone: r.zone, issueType: r.issueType, description: r.description, worker: r.worker };
+  }
+  if(type === 'store'){
+    return {
+      location: r.faction || '-', zone: r.orgDept || '-', issueType: '-',
+      description: `รายการ: ${r.itemList || '-'} | จำนวน: ${r.quantity || '-'} | สาเหตุ: ${r.reason || '-'} | ผู้อนุมัติ: ${r.approver || '-'}`,
+      worker: r.requesterName || '-',
+    };
+  }
+  return { // machine
+    location: r.faction || '-', zone: r.orgDept || '-', issueType: r.itemType || '-',
+    description: `รายละเอียด: ${r.detail || '-'} | จำนวน: ${r.quantity || '-'} | สาเหตุ: ${r.reason || '-'} | ผู้อนุมัติ: ${r.approver || '-'}`,
+    worker: r.guardLead || '-',
+  };
 }
 // วาดตารางประวัติทั้งหมดตามผลของ filteredHistoryRecords() พร้อมปุ่มดูรูป/ลบรายการ
 function renderHistoryTable(){
@@ -1550,12 +1863,17 @@ function renderHistoryTable(){
   const tbody = document.getElementById('histTbody');
   document.getElementById('histEmpty').classList.toggle('hidden', rows.length > 0);
   tbody.innerHTML = rows.map(r => {
+    const type = r.recordType || 'inspection';
+    const view = historyRowView(r);
     const photoCount = (r.photos || []).length;
-    const badge = r.isNormal === 'พบสิ่งผิดปกติ' ? `<span class="status-badge issue">พบสิ่งผิดปกติ</span>` : `<span class="status-badge normal">ปกติ</span>`;
+    const badge = type !== 'inspection'
+      ? `<span class="status-badge">-</span>`
+      : (r.isNormal === 'พบสิ่งผิดปกติ' ? `<span class="status-badge issue">พบสิ่งผิดปกติ</span>` : `<span class="status-badge normal">ปกติ</span>`);
     return `<tr>
+      <td>${escapeHtml(typeLabel(r))}</td>
       <td>${toThaiDate(r.checkDate)}</td><td>${escapeHtml(r.inspector)}</td><td>${escapeHtml(r.department)}</td>
-      <td>${escapeHtml(r.location)}</td><td>${escapeHtml(r.zone)}</td><td>${badge}</td>
-      <td>${escapeHtml(r.issueType)}</td><td>${escapeHtml(r.description)}</td><td>${escapeHtml(r.worker)}</td>
+      <td>${escapeHtml(view.location)}</td><td>${escapeHtml(view.zone)}</td><td>${badge}</td>
+      <td>${escapeHtml(view.issueType)}</td><td>${escapeHtml(view.description)}</td><td>${escapeHtml(view.worker)}</td>
       <td>${photoCount ? `<button class="link-btn" data-view="${r.id}">${photoCount} รูป</button>` : '-'}</td>
       <td>${fmtCreatedAt(r)}</td>
       <td><button class="iconbtn-mini del" data-id="${r.id}" title="ลบรายการนี้">🗑</button></td>
@@ -1579,7 +1897,10 @@ async function generateHistoryExcel(){
   if(!rows.length){ showToast('ไม่มีข้อมูลในช่วงที่เลือกสำหรับส่งออก', 'error'); return null; }
 
   const maxPhotos = rows.reduce((m, r) => Math.max(m, (r.photos || []).length), 0);
-  const textHeaders = ['วันที่','ผู้ตรวจ','แผนก','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
+  // "ประเภท" คอลัมน์ใหม่ (ตรวจพื้นที่/เบิกของสโตร์/ขนย้ายเครื่องจักร) ส่วนคอลัมน์ที่เหลือใช้
+  // historyRowView() แมปฟิลด์ของ store/machine ลงคอลัมน์เดิมเหมือนกับตารางในแอป (ดูคอมเมนต์
+  // ของ historyRowView ด้านบน) เพื่อไม่ต้องเพิ่มคอลัมน์ใหม่อีกชุดใหญ่ในไฟล์ Excel
+  const textHeaders = ['ประเภท','วันที่','ผู้ตรวจ','แผนก','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
   const photoHeaders = Array.from({ length: maxPhotos }, (_, i) => `รูปที่ ${i + 1}`);
 
   const wb = new ExcelJS.Workbook();
@@ -1597,9 +1918,12 @@ async function generateHistoryExcel(){
   const THUMB_PX = 76; // ขนาดรูปย่อในไฟล์ Excel (พิกเซล)
 
   rows.forEach(r => {
+    const type = r.recordType || 'inspection';
+    const view = historyRowView(r);
+    const statusText = type === 'inspection' ? r.isNormal : '-';
     const rowObj = ws.addRow([
-      toThaiDate(r.checkDate), r.inspector, r.department, r.location, r.zone,
-      r.isNormal, r.issueType || '', r.description || '', r.worker || '', fmtCreatedAt(r),
+      typeLabel(r), toThaiDate(r.checkDate), r.inspector, r.department, view.location, view.zone,
+      statusText, view.issueType || '', view.description || '', view.worker || '', fmtCreatedAt(r),
     ]);
     rowObj.alignment = { vertical: 'middle', wrapText: true };
 
@@ -1726,13 +2050,30 @@ async function generateReportPdf(){
   docPdf.setDrawColor(200); docPdf.line(marginX, y, pageW - marginX, y); y += 8;
 
   for(const r of rows){
-    const line1 = singleInspector
-      ? `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}`
-      : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector} (${r.department})`;
-    const extra = [`ผลตรวจ: ${r.isNormal}` + (r.worker ? `   ผู้ปฏิบัติงาน: ${r.worker}` : '')];
-    if(r.isNormal === 'พบสิ่งผิดปกติ'){
-      extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
-      if(r.description) extra.push(`รายละเอียด: ${r.description}`);
+    const rType = r.recordType || 'inspection';
+    let line1, extra;
+    if(rType === 'inspection'){
+      line1 = singleInspector
+        ? `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}`
+        : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector} (${r.department})`;
+      extra = [`ผลตรวจ: ${r.isNormal}` + (r.worker ? `   ผู้ปฏิบัติงาน: ${r.worker}` : '')];
+      if(r.isNormal === 'พบสิ่งผิดปกติ'){
+        extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
+        if(r.description) extra.push(`รายละเอียด: ${r.description}`);
+      }
+    } else {
+      // บันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร — ใช้ line1/extra คนละแบบจากผลตรวจพื้นที่
+      // (ไม่มีพื้นที่/โซน มีฝ่าย/แผนกแทน) แต่โค้ดฝังรูปด้านล่างยังใช้ path เดียวกันเพราะ
+      // r.photos เป็น array แบบเดียวกันทุก recordType
+      const typeLbl = typeLabel(r);
+      line1 = singleInspector
+        ? `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}`
+        : `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}  |  ${r.inspector} (${r.department})`;
+      extra = rType === 'store'
+        ? [`ผู้ขอเบิก: ${r.requesterName || '-'}   รายการ: ${r.itemList || '-'}   จำนวน: ${r.quantity || '-'}`,
+           `สาเหตุ: ${r.reason || '-'}   ผู้อนุมัติ: ${r.approver || '-'}`]
+        : [`ประเภท: ${r.itemType || '-'}   รายละเอียด: ${r.detail || '-'}   จำนวน: ${r.quantity || '-'}`,
+           `สาเหตุ: ${r.reason || '-'}   ผู้อนุมัติ: ${r.approver || '-'}   หัวหน้าชุด รปภ: ${r.guardLead || '-'}`];
     }
     const estLines = 1 + extra.reduce((n, t) => n + docPdf.splitTextToSize(t, contentW).length, 0);
     if(y + estLines * 5.5 + 4 > pageH - 20){ docPdf.addPage(); y = 18; }
@@ -2054,6 +2395,16 @@ function wireEvents(){
   });
   document.getElementById('btnSaveForm').addEventListener('click', submitInspectionForm);
 
+  // ---- บันทึกเบิกของสโตร์ / ขนย้ายเครื่องจักร ----
+  document.getElementById('btnAddEventLog').addEventListener('click', () => openEventLogForm());
+  document.getElementById('btnEventLogBack').addEventListener('click', showEventLogListView);
+  document.getElementById('ddEventFaction').addEventListener('change', (e) => { renderEventDeptOptions(e.target.value); });
+  document.getElementById('fileEventPhotos').addEventListener('change', (e) => {
+    state.pendingEventPhotos = state.pendingEventPhotos.concat(Array.from(e.target.files||[]));
+    renderEventAttachPreview();
+  });
+  document.getElementById('btnSaveEventLog').addEventListener('click', submitEventLogForm);
+
   document.getElementById('btnHistFilter').addEventListener('click', renderHistoryTable);
   document.getElementById('histLocation').addEventListener('change', renderHistoryTable);
   document.getElementById('histStatus').addEventListener('change', renderHistoryTable);
@@ -2078,6 +2429,7 @@ loadAll().then(() => {
   renderAreaSettings();
   renderIssueTypeOptions();
   renderIssueTypeSettings();
+  refreshOrgList();
   renderHistoryFilters();
   renderHistoryTable();
 }).catch(e => {

@@ -1,8 +1,9 @@
 // data.js — รายชื่อผู้ตรวจ + พื้นที่/โซน ("master data")
 // ไฟล์นี้แก้ไขโดย Dev เท่านั้น ผ่าน GitHub (เปิดไฟล์นี้ในเว็บ GitHub -> แก้ไข -> Commit)
 // ทุกคนที่เปิดแอปจะเห็นข้อมูลชุดเดียวกันเสมอ ไม่ต้องตั้งค่าอะไรเพิ่มนอกจาก GitHub ที่มีอยู่แล้ว
-// หมายเหตุ: อัปเดต 2026-09-19 — แทนที่ areas/issueTypes ทั้งหมดด้วยข้อมูลจริงของ SS (Zone1-13)
-// ที่มา: งาน ผจก เวรวันหยุด 1.xlsx (ชีท Zone 1-13) — รายชื่อผู้ตรวจ (members) คงไว้เหมือนเดิม ยังไม่เปลี่ยน
+// หมายเหตุ: อัปเดต 2026-09-19 — areas แยกเป็น location Zone1..Zone13 ตามจริง (17 จุดตรวจ)
+// เพิ่ม orgList (ฝ่าย/แผนกทั้งบริษัท) ไว้ใช้เป็น dropdown ในฟอร์ม 'เบิกของสโตร์'/'ขนย้ายเครื่องจักร'
+// (orgList ไม่เกี่ยวกับ department ของผู้ตรวจ — เป็นคนละรายการกัน) รายชื่อผู้ตรวจ (members) คงไว้เหมือนเดิม
 window.MASTER_DATA = {
   "members": [
     {
@@ -259,105 +260,105 @@ window.MASTER_DATA = {
   "areas": [
     {
       "id": "a1",
-      "location": "SS",
-      "zone": "Zone1 - Pilot Plant ชั้น 5 / Office / Meeting Room / ห้องน้ำ / ห้องครัว /ห้อง Lab",
-      "order": 1
+      "location": "Zone1",
+      "zone": "Pilot Plant ชั้น 5 / Office / Meeting Room / ห้องน้ำ / ห้องครัว /ห้อง Lab",
+      "order": 0
     },
     {
       "id": "a2",
-      "location": "SS",
-      "zone": "Zone1 - Pilot Plant ชั้น 4 / Office / Meeting Room / ห้องน้ำ / ห้องครัว",
-      "order": 2
+      "location": "Zone1",
+      "zone": "Pilot Plant ชั้น 4 / Office / Meeting Room / ห้องน้ำ / ห้องครัว",
+      "order": 1
     },
     {
       "id": "a3",
-      "location": "SS",
-      "zone": "Zone1 - Pilot Plant ชั้น 3  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
-      "order": 3
+      "location": "Zone1",
+      "zone": "Pilot Plant ชั้น 3  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
+      "order": 2
     },
     {
       "id": "a4",
-      "location": "SS",
-      "zone": "Zone1 - Pilot Plant ชั้น 2 /  Meeting Room / ห้องน้ำ / ห้องครัว",
-      "order": 4
+      "location": "Zone1",
+      "zone": "Pilot Plant ชั้น 2 /  Meeting Room / ห้องน้ำ / ห้องครัว",
+      "order": 3
     },
     {
       "id": "a5",
-      "location": "SS",
-      "zone": "Zone1 - Pilot Plant ชั้น 1  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
-      "order": 5
+      "location": "Zone1",
+      "zone": "Pilot Plant ชั้น 1  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
+      "order": 4
     },
     {
       "id": "a6",
-      "location": "SS",
-      "zone": "Zone2 - ITC 2.1  Office ชั้น2 / Office / Meeting Room / ห้องน้ำ / ห้องครัว / ห้องLab",
-      "order": 6
+      "location": "Zone2",
+      "zone": "ITC 2.1  Office ชั้น2 / Office / Meeting Room / ห้องน้ำ / ห้องครัว / ห้องLab",
+      "order": 0
     },
     {
       "id": "a7",
-      "location": "SS",
-      "zone": "Zone3 - ITC 2.1 พื้นที่ส่วนกลาง ชั้น2 / ทางเดิน / ห้องน้ำ / ห้องผ้า / ห้องฝากของ / ห้องโอ๊บเอี้ยม / Office HR / ห้องพักผ่อนพนักงาน ชายและหญิง / โรงอาหาร",
-      "order": 7
+      "location": "Zone3",
+      "zone": "ITC 2.1 พื้นที่ส่วนกลาง ชั้น2 / ทางเดิน / ห้องน้ำ / ห้องผ้า / ห้องฝากของ / ห้องโอ๊บเอี้ยม / Office HR / ห้องพักผ่อนพนักงาน ชายและหญิง / โรงอาหาร",
+      "order": 0
     },
     {
       "id": "a8",
-      "location": "SS",
-      "zone": "Zone4 - ITC 2.1  พื้นที่การผลิต ชั้น2 / ห้องชั่งสาร / สโตร์ / ห้อง Ink / ห้องปล่อยกระป๋อง / ช๊อปช่างด้านหลัง",
-      "order": 8
+      "location": "Zone4",
+      "zone": "ITC 2.1  พื้นที่การผลิต ชั้น2 / ห้องชั่งสาร / สโตร์ / ห้อง Ink / ห้องปล่อยกระป๋อง / ช๊อปช่างด้านหลัง",
+      "order": 0
     },
     {
       "id": "a9",
-      "location": "SS",
-      "zone": "Zone5 - ITC 2.1  พื้นที่การผลิต ชั้น1 / ทางเข้าไลน์ผลิตกลางไลน์ / คลุกผสม / บรรจุ / ขูดหนังขูดเลือด / เตรียมวัตถุดิบ Topping / ปลาสด / Retort / เช็คกระป๋อง / ทางเดินลูกค้า",
-      "order": 9
+      "location": "Zone5",
+      "zone": "ITC 2.1  พื้นที่การผลิต ชั้น1 / ทางเข้าไลน์ผลิตกลางไลน์ / คลุกผสม / บรรจุ / ขูดหนังขูดเลือด / เตรียมวัตถุดิบ Topping / ปลาสด / Retort / เช็คกระป๋อง / ทางเดินลูกค้า",
+      "order": 0
     },
     {
       "id": "a10",
-      "location": "SS",
-      "zone": "Zone6 - ITC 2.2  พื้นที่การผลิต ชั้น1 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
-      "order": 10
+      "location": "Zone6",
+      "zone": "ITC 2.2  พื้นที่การผลิต ชั้น1 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 0
     },
     {
       "id": "a11",
-      "location": "SS",
-      "zone": "Zone7 - ITC 2.2  พื้นที่ส่วนกลาง ชั้น1.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room / Office Fa",
-      "order": 11
+      "location": "Zone7",
+      "zone": "ITC 2.2  พื้นที่ส่วนกลาง ชั้น1.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room / Office Fa",
+      "order": 0
     },
     {
       "id": "a12",
-      "location": "SS",
-      "zone": "Zone8 - ITC 2.2  พื้นที่การผลิต ชั้น2 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
-      "order": 12
+      "location": "Zone8",
+      "zone": "ITC 2.2  พื้นที่การผลิต ชั้น2 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 0
     },
     {
       "id": "a13",
-      "location": "SS",
-      "zone": "Zone9 - ITC 2.2  พื้นที่ส่วนกลาง ชั้น2.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room",
-      "order": 13
+      "location": "Zone9",
+      "zone": "ITC 2.2  พื้นที่ส่วนกลาง ชั้น2.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room",
+      "order": 0
     },
     {
       "id": "a14",
-      "location": "SS",
-      "zone": "Zone10 - ITC 2.2  พื้นที่การผลิต ชั้น3 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
-      "order": 14
+      "location": "Zone10",
+      "zone": "ITC 2.2  พื้นที่การผลิต ชั้น3 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 0
     },
     {
       "id": "a15",
-      "location": "SS",
-      "zone": "Zone11 - พื้นที่ปิดฉลาก 40 ไร่ / ไลน์ปิดฉลาก / ลานโหลด / ห้องเย็น C / สโตร์",
-      "order": 15
+      "location": "Zone11",
+      "zone": "พื้นที่ปิดฉลาก 40 ไร่ / ไลน์ปิดฉลาก / ลานโหลด / ห้องเย็น C / สโตร์",
+      "order": 0
     },
     {
       "id": "a16",
-      "location": "SS",
-      "zone": "Zone12 - พื้นที่ห้องเย็น  / จุดลงปลา คัดปลา",
-      "order": 16
+      "location": "Zone12",
+      "zone": "พื้นที่ห้องเย็น  / จุดลงปลา คัดปลา",
+      "order": 0
     },
     {
       "id": "a17",
-      "location": "SS",
-      "zone": "Zone13 - พื้นที่รอบนอก  / ป้อม รปภ 1 /จุดเก็บถังปลา / Boiler /  ห้องขยะ  / ลานจอดรถ / ป้อม รปภ 2",
-      "order": 17
+      "location": "Zone13",
+      "zone": "พื้นที่รอบนอก  / ป้อม รปภ 1 /จุดเก็บถังปลา / Boiler /  ห้องขยะ  / ลานจอดรถ / ป้อม รปภ 2",
+      "order": 0
     }
   ],
   "issueTypes": [
@@ -374,5 +375,167 @@ window.MASTER_DATA = {
     "เครื่องจักรถูกเปิดทิ้งไว้",
     "สารเคมี",
     "แก๊สรั่ว"
+  ],
+  "orgList": [
+    {
+      "faction": "Facilities, Security & Admin - SS",
+      "dept": "Facilities, Security & Admin - SS"
+    },
+    {
+      "faction": "Global Pet Care Innovation - GPCI",
+      "dept": "Pet Technician"
+    },
+    {
+      "faction": "Global Pet Care Innovation - GPCI",
+      "dept": "Attending Veterinarian"
+    },
+    {
+      "faction": "Global Pet Care Innovation - GPCI",
+      "dept": "Cattery Specialist"
+    },
+    {
+      "faction": "Global Pet Care Innovation - GPCI",
+      "dept": "Engineering"
+    },
+    {
+      "faction": "Global Pet Care Innovation - GPCI",
+      "dept": "Nutrition & Technical Innovation"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Audit & Compliance-SS"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Food Law & Regulations"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Pet BU Quality"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Pet Quality"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Plant Quality Customer Experience"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "QMS"
+    },
+    {
+      "faction": "Pet BU Quality",
+      "dept": "Quality Project Improvement & Data Support"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Area Maintenance #1 -SS"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Area Maintenance #2 -SS"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Boiler and Utilities"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "General Maintenance & Building"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Pet Engineering & Maintenance"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Plant Engineering &  Maintenance - SS"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Refrigeration and Air con"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Robotics & Automation"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Wastewater Treatment"
+    },
+    {
+      "faction": "Plant Engineering &  Maintenance - SS",
+      "dept": "Electrical"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "ITC 40 Rai/ Suansom"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "Technical Support"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "WH Ops & Logistics – SS"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "จัดส่งสินค้า"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "วิศวกรรมและซ่อมบำรุง WH (สวนส้ม)"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "แผนกบรรจุภัณฑ์"
+    },
+    {
+      "faction": "ฝ่ายคลังสินค้า ITC2",
+      "dept": "แผนกปิดฉลากและบรรจุ"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "Plant Quality Assurance-SS"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "Quality Control-SS"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "ควบคุมคุณภาพ คลุกผสม-เช็ดกระป๋อง ITC Plant 2.2 (QC.ฆ่าเชื้อ-เช็ดกระป๋อง)"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "ควบคุมคุณภาพ ปลาสด-เช็ดกระป๋อง ITC2 Plant 2.1 (QC.ปิดผนึก)"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "คุณภาพห้องปฏิบัติการเคมี"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "สอบเทียบ"
+    },
+    {
+      "faction": "ฝ่ายคุณภาพ ITC2",
+      "dept": "ห้องปฏิบัติการเคมี Proximate - Ingredient"
+    },
+    {
+      "faction": "ฝ่ายผลิต ITC2",
+      "dept": "PD - ผลิต Can & Cup"
+    },
+    {
+      "faction": "ฝ่ายผลิต ITC2",
+      "dept": "PD - ผลิต Pouch & Sachet"
+    },
+    {
+      "faction": "ฝ่ายผลิต ITC2",
+      "dept": "PD - เตรียมการผลิต"
+    }
   ]
 };
