@@ -1,6 +1,8 @@
 // data.js — รายชื่อผู้ตรวจ + พื้นที่/โซน ("master data")
 // ไฟล์นี้แก้ไขโดย Dev เท่านั้น ผ่าน GitHub (เปิดไฟล์นี้ในเว็บ GitHub -> แก้ไข -> Commit)
 // ทุกคนที่เปิดแอปจะเห็นข้อมูลชุดเดียวกันเสมอ ไม่ต้องตั้งค่าอะไรเพิ่มนอกจาก GitHub ที่มีอยู่แล้ว
+// หมายเหตุ: อัปเดต 2026-09-19 — แทนที่ areas/issueTypes ทั้งหมดด้วยข้อมูลจริงของ SS (Zone1-13)
+// ที่มา: งาน ผจก เวรวันหยุด 1.xlsx (ชีท Zone 1-13) — รายชื่อผู้ตรวจ (members) คงไว้เหมือนเดิม ยังไม่เปลี่ยน
 window.MASTER_DATA = {
   "members": [
     {
@@ -257,514 +259,120 @@ window.MASTER_DATA = {
   "areas": [
     {
       "id": "a1",
-      "location": "AC",
-      "zone": "office ชั้น 3-office AC,FI,ห้องน้ำ",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone1 - Pilot Plant ชั้น 5 / Office / Meeting Room / ห้องน้ำ / ห้องครัว /ห้อง Lab",
+      "order": 1
     },
     {
       "id": "a2",
-      "location": "CS",
-      "zone": "ห้องเย็น3- office",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone1 - Pilot Plant ชั้น 4 / Office / Meeting Room / ห้องน้ำ / ห้องครัว",
+      "order": 2
     },
     {
       "id": "a3",
-      "location": "EN",
-      "zone": "office บ่อน้ำเสีย",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone1 - Pilot Plant ชั้น 3  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
+      "order": 3
     },
     {
       "id": "a4",
-      "location": "HR",
-      "zone": "โรงอาหาร3",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone1 - Pilot Plant ชั้น 2 /  Meeting Room / ห้องน้ำ / ห้องครัว",
+      "order": 4
     },
     {
       "id": "a5",
-      "location": "PE",
-      "zone": "Workshop PE/PF1-2",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone1 - Pilot Plant ชั้น 1  / ห้องน้ำ  / ห้อง Lab / ห้องเก็บอุปกรณ์ / ไลน์",
+      "order": 5
     },
     {
       "id": "a6",
-      "location": "PF1",
-      "zone": "โรงสกัดน้ำนั่งไก่/ห้องต้มข้าว",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone2 - ITC 2.1  Office ชั้น2 / Office / Meeting Room / ห้องน้ำ / ห้องครัว / ห้องLab",
+      "order": 6
     },
     {
       "id": "a7",
-      "location": "PF2",
-      "zone": "เตรียม chunk,loaf",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone3 - ITC 2.1 พื้นที่ส่วนกลาง ชั้น2 / ทางเดิน / ห้องน้ำ / ห้องผ้า / ห้องฝากของ / ห้องโอ๊บเอี้ยม / Office HR / ห้องพักผ่อนพนักงาน ชายและหญิง / โรงอาหาร",
+      "order": 7
     },
     {
       "id": "a8",
-      "location": "WH",
-      "zone": "ป้อม--3",
-      "order": 0
+      "location": "SS",
+      "zone": "Zone4 - ITC 2.1  พื้นที่การผลิต ชั้น2 / ห้องชั่งสาร / สโตร์ / ห้อง Ink / ห้องปล่อยกระป๋อง / ช๊อปช่างด้านหลัง",
+      "order": 8
     },
     {
       "id": "a9",
-      "location": "CS",
-      "zone": "ห้องเย็น3-เตรียมผัก",
-      "order": 1
+      "location": "SS",
+      "zone": "Zone5 - ITC 2.1  พื้นที่การผลิต ชั้น1 / ทางเข้าไลน์ผลิตกลางไลน์ / คลุกผสม / บรรจุ / ขูดหนังขูดเลือด / เตรียมวัตถุดิบ Topping / ปลาสด / Retort / เช็คกระป๋อง / ทางเดินลูกค้า",
+      "order": 9
     },
     {
       "id": "a10",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ลานรับวัตถุดิบ",
-      "order": 2
+      "location": "SS",
+      "zone": "Zone6 - ITC 2.2  พื้นที่การผลิต ชั้น1 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 10
     },
     {
       "id": "a11",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ห้องเก็บcold-storage",
-      "order": 3
+      "location": "SS",
+      "zone": "Zone7 - ITC 2.2  พื้นที่ส่วนกลาง ชั้น1.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room / Office Fa",
+      "order": 11
     },
     {
       "id": "a12",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ห้องเครื่องทำความเย็น3",
-      "order": 4
+      "location": "SS",
+      "zone": "Zone8 - ITC 2.2  พื้นที่การผลิต ชั้น2 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 12
     },
     {
       "id": "a13",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ห้องแกะปลา",
-      "order": 5
+      "location": "SS",
+      "zone": "Zone9 - ITC 2.2  พื้นที่ส่วนกลาง ชั้น2.5 / ห้องควมคุมไฟฟ้า / ทางเดินเข้าไลน์ผลิต / ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า / Meeting Room",
+      "order": 13
     },
     {
       "id": "a14",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ห้องBonepowder",
-      "order": 6
+      "location": "SS",
+      "zone": "Zone10 - ITC 2.2  พื้นที่การผลิต ชั้น3 / เตรียมวัตถุดิบ + คลุกผสม / บรรจุ / Retort / เช็คกระป๋อง",
+      "order": 14
     },
     {
       "id": "a15",
-      "location": "CS",
-      "zone": "ห้องเย็น3 -ห้องfish Extract",
-      "order": 7
+      "location": "SS",
+      "zone": "Zone11 - พื้นที่ปิดฉลาก 40 ไร่ / ไลน์ปิดฉลาก / ลานโหลด / ห้องเย็น C / สโตร์",
+      "order": 15
     },
     {
       "id": "a16",
-      "location": "CS",
-      "zone": "ห้องเย็น4",
-      "order": 8
+      "location": "SS",
+      "zone": "Zone12 - พื้นที่ห้องเย็น  / จุดลงปลา คัดปลา",
+      "order": 16
     },
     {
       "id": "a17",
-      "location": "CS",
-      "zone": "อาคารPilot plant",
-      "order": 9
-    },
-    {
-      "id": "a18",
-      "location": "CS",
-      "zone": "ห้องเย็น2",
-      "order": 10
-    },
-    {
-      "id": "a19",
-      "location": "CS",
-      "zone": "ห้องละลายไฟฟ้า",
-      "order": 11
-    },
-    {
-      "id": "a20",
-      "location": "CS",
-      "zone": "ห้องตาชั่ง",
-      "order": 12
-    },
-    {
-      "id": "a21",
-      "location": "EN",
-      "zone": "Workshop ช่าง -จุดคัดแยกขยะ",
-      "order": 1
-    },
-    {
-      "id": "a22",
-      "location": "EN",
-      "zone": "บ่อน้ำดี",
-      "order": 2
-    },
-    {
-      "id": "a23",
-      "location": "EN",
-      "zone": "workshop PE/EN บอยเลอร์ ซ่อมบำรุง ช่างไฟ ช่างก่อสร้าง",
-      "order": 3
-    },
-    {
-      "id": "a24",
-      "location": "EN",
-      "zone": "OfficePE/EN",
-      "order": 4
-    },
-    {
-      "id": "a25",
-      "location": "EN",
-      "zone": "อาคารบอยเลอร์ชีวมวล",
-      "order": 5
-    },
-    {
-      "id": "a26",
-      "location": "HR",
-      "zone": "ป้อม--7",
-      "order": 1
-    },
-    {
-      "id": "a27",
-      "location": "HR",
-      "zone": "ห้องซักอบรีด",
-      "order": 2
-    },
-    {
-      "id": "a28",
-      "location": "HR",
-      "zone": "โรงอาหาร2",
-      "order": 3
-    },
-    {
-      "id": "a29",
-      "location": "HR",
-      "zone": "โรงอาหาร1-ป้อม1 ป้อม2 ,SHE",
-      "order": 4
-    },
-    {
-      "id": "a30",
-      "location": "HR",
-      "zone": "โรงอาหาร1-ห้องน้ำ,ห้องละหมาด",
-      "order": 5
-    },
-    {
-      "id": "a31",
-      "location": "HR",
-      "zone": "ห้องฝากสัมภาระ",
-      "order": 6
-    },
-    {
-      "id": "a32",
-      "location": "HR",
-      "zone": "office ชั้น 1-สำนักงาน HR /ห้องประชุม/ห้องน้ำชั้น 1/ห้องพยาบาล01",
-      "order": 7
-    },
-    {
-      "id": "a33",
-      "location": "HR",
-      "zone": "office ชั้น 2-officeฝ่าย PN,PF1,QC,IT,PO,BQ,ห้องอบรม1-3,ห้องน้ำ",
-      "order": 8
-    },
-    {
-      "id": "a34",
-      "location": "HR",
-      "zone": "ห้องพยาบาล02",
-      "order": 9
-    },
-    {
-      "id": "a35",
-      "location": "PE",
-      "zone": "Overhual",
-      "order": 1
-    },
-    {
-      "id": "a36",
-      "location": "PF1",
-      "zone": "ห้อง sachet",
-      "order": 1
-    },
-    {
-      "id": "a37",
-      "location": "PF1",
-      "zone": "ห้อง Pouch",
-      "order": 2
-    },
-    {
-      "id": "a38",
-      "location": "PF1",
-      "zone": "ห้องเตรียมผัก/ห้องเย็น",
-      "order": 3
-    },
-    {
-      "id": "a39",
-      "location": "PF1",
-      "zone": "ห้อง Retort Store (VS เก่า)",
-      "order": 4
-    },
-    {
-      "id": "a40",
-      "location": "PF1",
-      "zone": "ห้องขูดเลือด",
-      "order": 5
-    },
-    {
-      "id": "a41",
-      "location": "PF1",
-      "zone": "บรรจุ CUP",
-      "order": 6
-    },
-    {
-      "id": "a42",
-      "location": "PF1",
-      "zone": "บรรจุ CAN",
-      "order": 7
-    },
-    {
-      "id": "a43",
-      "location": "PF1",
-      "zone": "Store/Ink",
-      "order": 8
-    },
-    {
-      "id": "a44",
-      "location": "PF1",
-      "zone": "หม้ออบปลา",
-      "order": 9
-    },
-    {
-      "id": "a45",
-      "location": "PF1",
-      "zone": "จุดเตรียม chunk",
-      "order": 10
-    },
-    {
-      "id": "a46",
-      "location": "PF1",
-      "zone": "ห้องเย็น PF1",
-      "order": 11
-    },
-    {
-      "id": "a47",
-      "location": "PF1",
-      "zone": "ห้องเครื่องทำความเย็น PF1",
-      "order": 12
-    },
-    {
-      "id": "a48",
-      "location": "PF1",
-      "zone": "ไลน์CUP1-4",
-      "order": 13
-    },
-    {
-      "id": "a49",
-      "location": "PF1",
-      "zone": "ห้องเคมี",
-      "order": 14
-    },
-    {
-      "id": "a50",
-      "location": "PF1",
-      "zone": "Retort CUP",
-      "order": 15
-    },
-    {
-      "id": "a51",
-      "location": "PF1",
-      "zone": "ห้องปล่อยกระป๋อง/ห้องปั้มลม",
-      "order": 16
-    },
-    {
-      "id": "a52",
-      "location": "PF1",
-      "zone": "ห้องเก็บสารเคมี",
+      "location": "SS",
+      "zone": "Zone13 - พื้นที่รอบนอก  / ป้อม รปภ 1 /จุดเก็บถังปลา / Boiler /  ห้องขยะ  / ลานจอดรถ / ป้อม รปภ 2",
       "order": 17
-    },
-    {
-      "id": "a53",
-      "location": "PF1",
-      "zone": "ทางเข้าไลน์ PF1(ฝั่งโรงอาหาร1)",
-      "order": 18
-    },
-    {
-      "id": "a54",
-      "location": "PF2",
-      "zone": "ไลน์ CUP 6-7",
-      "order": 1
-    },
-    {
-      "id": "a55",
-      "location": "PF2",
-      "zone": "ไลน์ CAN",
-      "order": 2
-    },
-    {
-      "id": "a56",
-      "location": "PF2",
-      "zone": "Auto pouch",
-      "order": 3
-    },
-    {
-      "id": "a57",
-      "location": "PF2",
-      "zone": "Sachet",
-      "order": 4
-    },
-    {
-      "id": "a58",
-      "location": "PF2",
-      "zone": "Retort Store",
-      "order": 5
-    },
-    {
-      "id": "a59",
-      "location": "PF2",
-      "zone": "เตรียมกระป๋อง",
-      "order": 6
-    },
-    {
-      "id": "a60",
-      "location": "PF2",
-      "zone": "ห้องเคมี",
-      "order": 7
-    },
-    {
-      "id": "a61",
-      "location": "PF2",
-      "zone": "ห้องเก็บบู๊ท",
-      "order": 8
-    },
-    {
-      "id": "a62",
-      "location": "PF2",
-      "zone": "Office BI",
-      "order": 9
-    },
-    {
-      "id": "a63",
-      "location": "PF2",
-      "zone": "Office PF2",
-      "order": 10
-    },
-    {
-      "id": "a64",
-      "location": "PF2",
-      "zone": "Jerky",
-      "order": 11
-    },
-    {
-      "id": "a65",
-      "location": "PF2",
-      "zone": "อาคารสำนักงาน QA+LAB",
-      "order": 12
-    },
-    {
-      "id": "a66",
-      "location": "PF2",
-      "zone": "อาคารสำนักงาน ชั้น2",
-      "order": 13
-    },
-    {
-      "id": "a67",
-      "location": "PF2",
-      "zone": "อาคารสำนักงาน ชั้น3",
-      "order": 14
-    },
-    {
-      "id": "a68",
-      "location": "PF2",
-      "zone": "อาคารสำนักงาน ชั้น4",
-      "order": 15
-    },
-    {
-      "id": "a69",
-      "location": "PF2",
-      "zone": "ห้องล้างกะบะ",
-      "order": 16
-    },
-    {
-      "id": "a70",
-      "location": "PF2",
-      "zone": "freeze dry",
-      "order": 17
-    },
-    {
-      "id": "a71",
-      "location": "WH",
-      "zone": "ทางเข้า WH1 ออฟฟิคพัสดุ",
-      "order": 1
-    },
-    {
-      "id": "a72",
-      "location": "WH",
-      "zone": "WH1-BC",
-      "order": 2
-    },
-    {
-      "id": "a73",
-      "location": "WH",
-      "zone": "WH2-ปิดฉลาก",
-      "order": 3
-    },
-    {
-      "id": "a74",
-      "location": "WH",
-      "zone": "WH4-ส่งมอบสินค้า",
-      "order": 4
-    },
-    {
-      "id": "a75",
-      "location": "WH",
-      "zone": "WH4-ห้องน้ำด้านใน-ด้านนอก",
-      "order": 5
-    },
-    {
-      "id": "a76",
-      "location": "WH",
-      "zone": "WH2-ชั้นลอย",
-      "order": 6
-    },
-    {
-      "id": "a77",
-      "location": "WH",
-      "zone": "WH2-ห้องเก็บฉลากบ่อ1000",
-      "order": 7
-    },
-    {
-      "id": "a78",
-      "location": "WH",
-      "zone": "WH4-PKG-BC",
-      "order": 8
-    },
-    {
-      "id": "a79",
-      "location": "WH",
-      "zone": "WH5-PKG-BC",
-      "order": 9
-    },
-    {
-      "id": "a80",
-      "location": "WH",
-      "zone": "WH6-BC",
-      "order": 10
-    },
-    {
-      "id": "a81",
-      "location": "WH",
-      "zone": "WH7",
-      "order": 11
-    },
-    {
-      "id": "a82",
-      "location": "WH",
-      "zone": "WH8",
-      "order": 12
-    },
-    {
-      "id": "a83",
-      "location": "WH",
-      "zone": "สโตรกลาง",
-      "order": 13
-    },
-    {
-      "id": "a84",
-      "location": "WH",
-      "zone": "อาคารเก็บน้ำมันดีเซล",
-      "order": 14
     }
   ],
   "issueTypes": [
+    "น้ำไม่ปิด",
+    "อุปกรณ์ไฟฟ้าถูกเปิดทิ้งไว้",
     "ลมรั่ว",
-    "ปิดน้ำ",
-    "ไฟเสีย",
-    "GMP",
-    "อื่นๆ"
+    "สารเคมีรั่วซึม",
+    "สายไฟชำรุด",
+    "ไม่ปิดประตู / หน้าต่าง",
+    "พบสัตว์พาหะ",
+    "น้ำรั่วซึม",
+    "ประตูฉุกเฉินถูกเปิดใช้งาน",
+    "อื่นๆ",
+    "เครื่องจักรถูกเปิดทิ้งไว้",
+    "สารเคมี",
+    "แก๊สรั่ว"
   ]
 };
