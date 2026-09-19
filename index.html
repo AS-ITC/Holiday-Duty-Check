@@ -360,10 +360,6 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <div id="viewStart" class="view">
         <div class="card">
           <div class="field">
-            <label>แผนก</label>
-            <select id="ddDepartment"></select>
-          </div>
-          <div class="field">
             <label>ชื่อผู้ตรวจ</label>
             <div class="autocomplete-wrap">
               <input type="text" id="ddInspector" autocomplete="off" placeholder="พิมพ์ค้นหาชื่อของคุณ...">
@@ -1363,36 +1359,19 @@ function locationStatus(loc){
 }
 
 /* ======================================================================
-   ZONE: RENDER - หน้าเริ่มตรวจ (เลือกแผนก/ชื่อผู้ตรวจ/วันที่)
+   ZONE: RENDER - หน้าเริ่มตรวจ (เลือกชื่อผู้ตรวจ/วันที่)
    ====================================================================== */
-// เติม dropdown แผนก จากรายชื่อแผนกที่มีอยู่จริงใน DBX.members (data.js)
-// ใส่ตัวเลือกหลอก "— กรุณาเลือกฝ่าย —" ไว้ตัวแรกเสมอ (value ว่าง) เพื่อบังคับให้ผู้ใช้
-// เลือกแผนกเองก่อน ไม่ auto-เลือกแผนกแรกในลิสต์ให้เฉย ๆ (กันเลือกแผนกผิดโดยไม่รู้ตัว)
-// ถ้าแผนกที่เลือกไว้เดิมยังมีอยู่ในลิสต์ใหม่ก็จะคงค่านั้นไว้ให้เหมือนเดิม
+// หน้าแรกไม่มีการเลือกแผนกแล้ว — ค้นหาชื่อผู้ตรวจได้จากรายชื่อทั้งหมดเลย
+// (state.department จะถูก derive อัตโนมัติจากสมาชิกที่เลือก ใน btnNext ตอนกดเริ่มตรวจ)
 function renderStartScreen(){
-  const ddDept = document.getElementById('ddDepartment');
-  const depts = distinctDepartments();
-  const prevDept = ddDept.value;
-  ddDept.innerHTML = depts.length
-    ? `<option value="">— กรุณาเลือกฝ่าย —</option>` + depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')
-    : `<option value="">— ยังไม่มีแผนก ไปเพิ่มที่ตั้งค่า —</option>`;
-  if(depts.includes(prevDept)) ddDept.value = prevDept;
-  state.department = ddDept.value;
   renderInspectorOptions();
   document.getElementById('dpDate').value = state.date;
 }
-// ปรับ placeholder ของช่องค้นหาชื่อผู้ตรวจตามแผนกที่เลือก + เคลียร์ชื่อทิ้งถ้าไม่อยู่ในแผนกนี้แล้ว
-// ยังไม่ได้เลือกแผนกเลย (state.department ว่าง) จะบอกให้ไปเลือกแผนกก่อน แทนที่จะบอกว่า
-// "ไม่มีผู้ตรวจในแผนกนี้" ซึ่งจะฟังดูเหมือนแผนกนี้มีปัญหาทั้งที่จริงคือยังไม่ได้เลือกเลย
+// ปรับ placeholder ของช่องค้นหาชื่อผู้ตรวจ + เคลียร์ชื่อทิ้งถ้าไม่อยู่ในรายชื่อแล้ว
 function renderInspectorOptions(){
   const ddIns = document.getElementById('ddInspector');
-  if(!state.department){
-    ddIns.placeholder = 'กรุณาเลือกฝ่ายก่อน';
-    ddIns.value = '';
-    return;
-  }
-  const members = membersByDepartment(state.department);
-  ddIns.placeholder = members.length ? 'พิมพ์ค้นหาชื่อของคุณ...' : 'ไม่มีผู้ตรวจในแผนกนี้ ไปเพิ่มที่ตั้งค่า';
+  const members = DBX.members;
+  ddIns.placeholder = members.length ? 'พิมพ์ค้นหาชื่อของคุณ...' : 'ยังไม่มีรายชื่อผู้ตรวจ ไปเพิ่มที่ตั้งค่า';
   if(!members.some(m => m.name === ddIns.value)) ddIns.value = '';
 }
 
@@ -2349,12 +2328,11 @@ function switchSettingsSubtab(tab){
    "ผูกปุ่ม" ยังไม่ต้องรอข้อมูลพร้อม
    ====================================================================== */
 function wireEvents(){
-  document.getElementById('ddDepartment').addEventListener('change', (e) => { state.department = e.target.value; renderInspectorOptions(); });
   document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; });
   setupAutocomplete(
     document.getElementById('ddInspector'),
     document.getElementById('inspectorAutoList'),
-    () => membersByDepartment(state.department).map(m => m.name)
+    () => DBX.members.map(m => m.name)
   );
   setupAutocomplete(
     document.getElementById('newMemberDept'),
@@ -2371,12 +2349,11 @@ function wireEvents(){
 
   document.getElementById('btnNext').addEventListener('click', () => {
     state.inspectorName = document.getElementById('ddInspector').value.trim();
-    state.department = document.getElementById('ddDepartment').value;
     state.date = document.getElementById('dpDate').value || todayStr();
-    if(!state.department){ showToast('กรุณาเลือกฝ่ายก่อน', 'error'); return; }
     if(!state.inspectorName || !state.date){ showToast('กรุณากรอกชื่อผู้ตรวจและวันที่', 'error'); return; }
-    const known = membersByDepartment(state.department).some(m => m.name === state.inspectorName);
-    if(!known){ showToast('ไม่พบชื่อนี้ในรายชื่อผู้ตรวจของแผนกนี้ กรุณาเลือกจากรายการค้นหา', 'error'); return; }
+    const matched = DBX.members.find(m => m.name === state.inspectorName);
+    if(!matched){ showToast('ไม่พบชื่อนี้ในรายชื่อผู้ตรวจ กรุณาเลือกจากรายการค้นหา', 'error'); return; }
+    state.department = matched.department || '';
     document.getElementById('viewStart').classList.add('hidden');
     document.getElementById('viewLocations').classList.remove('hidden');
     renderLocationsGrid();
