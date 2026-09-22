@@ -360,7 +360,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
     <div class="brand">🛡️ ตรวจเวรวันหยุด <span style="font-weight:400;font-size:12px;opacity:.85;">(ออฟไลน์)</span></div>
     <div class="topbar-actions">
       <button id="btnConnStatus" class="chip ok">💾<span class="chip-label"> กำลังเชื่อมต่อระบบ</span></button>
-      <button id="btnSettings" class="icon-btn" title="ตั้งค่า">⚙️</button>
+      <button id="btnSettings" class="icon-btn hidden" title="ตั้งค่า">⚙️</button>
     </div>
   </header>
 
@@ -582,6 +582,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         <button data-subtab="areas">พื้นที่/โซน</button>
         <button data-subtab="issues">ประเภทปัญหา</button>
         <button data-subtab="data">ข้อมูล</button>
+        <button data-subtab="users" id="settingsUsersTab" class="hidden">ผู้ใช้งาน</button>
       </div>
 
       <div id="settings-members" class="settings-panel">
@@ -641,6 +642,13 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         <div class="card">
           <b>เกี่ยวกับข้อมูล</b>
           <p style="font-size:12px;color:var(--text-soft);">รายชื่อผู้ตรวจและพื้นที่/โซน โหลดมาจากไฟล์ <b>data.js</b> ที่อยู่บนเว็บ (ส่วนกลาง ทุกคนเห็นเหมือนกัน แก้ได้เฉพาะ Dev ผ่าน GitHub) ส่วนผลตรวจและรูปถ่ายที่บันทึกจะเก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่ส่งขึ้นที่ไหน — ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ผลตรวจจะหายไป กรุณาออกรายงาน PDF หรือสำรองไฟล์ไว้เป็นระยะ</p>
+        </div>
+
+        <div id="settings-users" class="settings-panel hidden">
+          <div class="card" style="background:var(--sky-100);">
+            <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 เฉพาะ Superuser เท่านั้นที่กำหนดสิทธิ์ผู้ใช้งานได้</p>
+          </div>
+          <div id="userList"></div>
         </div>
         <div class="card">
           <b>สำรองข้อมูลผลตรวจ</b>
@@ -1227,6 +1235,20 @@ const API_BASE = `${SUPABASE_URL}/rest/v1`;
 const AUTH_BASE = `${SUPABASE_URL}/auth/v1`;
 let serverAvailable = null;
 let authSession = null;
+let currentProfile = null;
+
+function hasSettingsAccess(){
+  return ['poweruser', 'superuser'].includes(currentProfile?.role);
+}
+function isSuperuser(){
+  return currentProfile?.role === 'superuser';
+}
+function updateSettingsAccess(){
+  const button = document.getElementById('btnSettings');
+  const usersTab = document.getElementById('settingsUsersTab');
+  button.classList.toggle('hidden', !hasSettingsAccess());
+  usersTab.classList.toggle('hidden', !isSuperuser());
+}
 
 async function apiRequest(path, options = {}){
   const { headers: optionHeaders = {}, ...requestOptions } = options;
@@ -1285,6 +1307,31 @@ async function deleteRemoteRecord(id){
 async function clearRemoteRecords(){
   if(serverAvailable !== true) return;
   await apiRequest('/records', { method: 'DELETE' });
+}
+
+async function loadCurrentProfile(){
+  if(!authSession?.user?.id){ currentProfile = null; updateSettingsAccess(); return; }
+  const rows = await apiRequest(`/profiles?select=id,email,role&id=eq.${encodeURIComponent(authSession.user.id)}`);
+  currentProfile = rows[0] || null;
+  updateSettingsAccess();
+}
+
+async function loadUserProfiles(){
+  if(!isSuperuser()) throw new Error('เฉพาะ Superuser เท่านั้นที่จัดการสิทธิ์ผู้ใช้ได้');
+  return apiRequest('/profiles?select=id,email,role,created_at&order=email.asc');
+}
+
+function roleLabel(role){
+  return ({ user: 'User', admin: 'Admin', poweruser: 'Poweruser', superuser: 'Superuser' })[role] || role;
+}
+
+async function updateUserRole(id, role){
+  if(!isSuperuser()) throw new Error('ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้');
+  await apiRequest(`/profiles?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ role }),
+  });
 }
 
 async function saveRemoteMaster(){
@@ -1377,10 +1424,13 @@ async function initAuth(){
       });
       if(!response.ok) throw new Error('session expired');
       authSession.user = await response.json();
+      await loadCurrentProfile();
     }
   }catch(error){
     authSession = null;
+    currentProfile = null;
     localStorage.removeItem('holiday-supabase-session');
+    updateSettingsAccess();
   }
   document.getElementById('authOverlay').classList.toggle('hidden', Boolean(authSession));
 }
@@ -1395,6 +1445,7 @@ function wireAuth(){
     button.disabled = true;
     try{
       await signIn(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
+      await loadCurrentProfile();
       document.getElementById('authOverlay').classList.add('hidden');
       await loadAll();
       renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
@@ -1405,6 +1456,7 @@ function wireAuth(){
     errorBox.textContent = '';
     try{
       await signUp(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
+      await loadCurrentProfile();
       document.getElementById('authOverlay').classList.add('hidden');
       await loadAll();
       renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
@@ -2581,11 +2633,54 @@ function switchMainTab(tab){
 // สลับแท็บย่อยในหน้าตั้งค่า (ผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา / ข้อมูล) — render list
 // ของแท็บที่เพิ่งเปิดใหม่ทุกครั้ง กันข้อมูลค้างจากตอนแก้ในแท็บอื่นแล้วสลับกลับมา
 function switchSettingsSubtab(tab){
+  if(tab === 'users' && !isSuperuser()){
+    showToast('เฉพาะ Superuser เท่านั้นที่จัดการผู้ใช้งานได้', 'error');
+    return;
+  }
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.dataset.subtab === tab));
-  ['members','areas','issues','data'].forEach(t => document.getElementById('settings-'+t).classList.toggle('hidden', t !== tab));
+  ['members','areas','issues','data','users'].forEach(t => document.getElementById('settings-'+t).classList.toggle('hidden', t !== tab));
   if(tab === 'members') renderMemberSettings();
   if(tab === 'areas') renderAreaSettings();
   if(tab === 'issues') renderIssueTypeSettings();
+  if(tab === 'users') renderUserSettings();
+}
+
+async function renderUserSettings(){
+  const wrap = document.getElementById('userList');
+  if(!isSuperuser()){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<div class="empty-hint">กำลังโหลดรายชื่อผู้ใช้งาน...</div>';
+  try{
+    const users = await loadUserProfiles();
+    wrap.innerHTML = users.map(user => `<div class="list-row">
+      <div class="info"><b>${escapeHtml(user.email || user.id)}</b><span>${escapeHtml(user.id)}</span></div>
+      <select class="user-role" data-user-id="${escapeHtml(user.id)}" aria-label="สิทธิ์ของ ${escapeHtml(user.email || user.id)}">
+        ${['user','admin','poweruser','superuser'].map(role => `<option value="${role}"${user.role === role ? ' selected' : ''}>${roleLabel(role)}</option>`).join('')}
+      </select>
+    </div>`).join('');
+    wrap.querySelectorAll('.user-role').forEach(select => {
+      select.addEventListener('change', async () => {
+        const previous = select.dataset.previous || select.value;
+        select.disabled = true;
+        try{
+          await updateUserRole(select.dataset.userId, select.value);
+          select.dataset.previous = select.value;
+          if(select.dataset.userId === authSession.user.id){
+            await loadCurrentProfile();
+            if(!hasSettingsAccess()) hideModal('modalSettings');
+          }
+          showToast('บันทึกสิทธิ์ผู้ใช้แล้ว', 'success');
+        }catch(error){
+          select.value = previous;
+          showToast('เปลี่ยนสิทธิ์ไม่สำเร็จ: ' + error.message, 'error');
+        }finally{
+          select.disabled = false;
+        }
+      });
+    });
+  }catch(error){
+    wrap.innerHTML = `<div class="empty-hint">${escapeHtml(error.message)}</div>`;
+    showToast('โหลดรายชื่อผู้ใช้ไม่สำเร็จ: ' + error.message, 'error');
+  }
 }
 
 /* ======================================================================
@@ -2625,7 +2720,10 @@ function wireEvents(){
 
   document.querySelectorAll('#tabbar .tab').forEach(t => t.addEventListener('click', () => switchMainTab(t.dataset.tab)));
   document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', () => hideModal(b.dataset.close)));
-  document.getElementById('btnSettings').addEventListener('click', () => { showModal('modalSettings'); switchSettingsSubtab('members'); });
+  document.getElementById('btnSettings').addEventListener('click', () => {
+    if(!hasSettingsAccess()){ showToast('เฉพาะ Poweruser หรือ Superuser เท่านั้นที่เปิดตั้งค่าได้', 'error'); return; }
+    showModal('modalSettings'); switchSettingsSubtab('members');
+  });
   document.querySelectorAll('.subtabs button').forEach(b => b.addEventListener('click', () => switchSettingsSubtab(b.dataset.subtab)));
 
   document.getElementById('btnAddMember').addEventListener('click', addMember);
