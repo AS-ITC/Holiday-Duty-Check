@@ -439,7 +439,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <div class="table-wrap">
         <table id="histTable">
           <thead><tr>
-            <th>ประเภท</th><th>วันที่</th><th>ผู้ตรวจ</th><th>พื้นที่</th><th>โซน</th>
+            <th>ประเภท</th><th>วันที่</th><th>ผู้ตรวจ</th><th>แผนก</th><th>พื้นที่</th><th>โซน</th>
             <th>สถานะ</th><th>ประเภทปัญหา</th><th>รายละเอียด</th><th>ผู้ปฏิบัติงาน</th><th>รูป</th><th>บันทึกเมื่อ</th><th></th>
           </tr></thead>
           <tbody id="histTbody"></tbody>
@@ -591,6 +591,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         <div class="card">
           <div class="row">
             <div class="field"><label>ชื่อ-สกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมชาย ใจดี"></div>
+            <div class="field autocomplete-wrap"><label>แผนก</label><input type="text" id="newMemberDept" autocomplete="off" placeholder="เช่น Maintenance"><div class="autocomplete-list hidden" id="deptAutoList"></div></div>
           </div>
           <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ</button>
         </div>
@@ -1139,7 +1140,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       → state คือค่าที่กำลังกรอกอยู่ตอนนี้ (แผนก/ชื่อผู้ตรวจ/วันที่/รูปที่ยังไม่บันทึก ฯลฯ)
 
    ── ความสามารถหลัก (ผูกกับโซนโค้ดด้านล่าง ไล่ตามลำดับในไฟล์) ──
-   - ตรวจเวรตามจุด: เลือกชื่อ → กดเข้าไปที่พื้นที่ → เลือกโซนที่ยังไม่ตรวจ →
+   - ตรวจเวรตามจุด: เลือกแผนก/ชื่อ → กดเข้าไปที่พื้นที่ → เลือกโซนที่ยังไม่ตรวจ →
      กรอกผลตรวจ + แนบรูป (บีบอัดอัตโนมัติด้วย compressImage) → บันทึกลง IndexedDB
    - ประวัติ/รายงาน: กรองผลตรวจตามช่วงวันที่/พื้นที่/สถานะ แล้วส่งออกได้ 2 แบบ
      • Excel (.xlsx) — ฝังรูปแนบเป็นรูปจริงในคอลัมน์ (ใช้ไลบรารี ExcelJS)
@@ -1426,6 +1427,7 @@ const DBX = { members: [], areas: [], issueTypes: [], orgList: [], records: [] }
 const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
 const state = {
   date: todayStr(),
+  department: '',
   inspectorName: '',
   selectedLocation: null,
   selectedZone: null,
@@ -1489,9 +1491,7 @@ function loadMaster(source = window.MASTER_DATA){
   try{
     const data = source;
     if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
-    DBX.members = (Array.isArray(data.members) ? data.members : [])
-      .map(member => ({ id: member.id, name: member.name }))
-      .sort((a,b) => a.name.localeCompare(b.name));
+    DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
     // issueTypes เป็นของใหม่ — ถ้า data.js ยังไม่ได้อัปเดตให้มีรายการนี้ ใช้ค่าเริ่มต้นไปก่อน
     DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
@@ -1562,6 +1562,8 @@ async function refreshRecords(){
    ZONE: DERIVED DATA HELPERS — ฟังก์ชันช่วยดึง/คำนวณข้อมูลจาก DBX
    (ไม่มีข้อมูลใหม่ แค่แปลง/กรอง DBX ที่มีอยู่ให้ใช้งานง่ายขึ้น)
    ====================================================================== */
+function distinctDepartments(){ return [...new Set(DBX.members.map(m => (m.department||'').trim()).filter(Boolean))].sort(); }
+function membersByDepartment(dept){ return DBX.members.filter(m => (m.department||'') === dept); }
 function distinctLocations(){ return [...new Set(DBX.areas.map(a => a.location).filter(Boolean))]; }
 function zonesOfLocation(loc){ return DBX.areas.filter(a => a.location === loc); }
 // รายชื่อ "ฝ่าย" ที่ไม่ซ้ำจาก DBX.orgList — คงลำดับตามที่ปรากฏก่อน-หลังใน data.js (ไม่เรียง a-z)
@@ -1802,6 +1804,7 @@ async function submitInspectionForm(){
       recordType: 'inspection',
       checkDate: existing ? existing.checkDate : state.date,
       inspector: existing ? existing.inspector : state.inspectorName,
+      department: existing ? existing.department : state.department,
       location: state.selectedLocation,
       zone: state.selectedZone,
       isNormal: status,
@@ -1981,6 +1984,7 @@ async function submitEventLogForm(){
       recordType: type,
       checkDate: state.date,
       inspector: state.inspectorName,
+      department: state.department,
       faction, orgDept, photos,
       createdAt: existing ? (existing.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
@@ -2097,7 +2101,7 @@ function renderHistoryTable(){
       : (r.isNormal === 'พบสิ่งผิดปกติ' ? `<span class="status-badge issue">พบสิ่งผิดปกติ</span>` : `<span class="status-badge normal">ปกติ</span>`);
     return `<tr>
       <td>${escapeHtml(typeLabel(r))}</td>
-      <td>${toThaiDate(r.checkDate)}</td><td>${escapeHtml(r.inspector)}</td>
+      <td>${toThaiDate(r.checkDate)}</td><td>${escapeHtml(r.inspector)}</td><td>${escapeHtml(r.department)}</td>
       <td>${escapeHtml(view.location)}</td><td>${escapeHtml(view.zone)}</td><td>${badge}</td>
       <td>${escapeHtml(view.issueType)}</td><td>${escapeHtml(view.description)}</td><td>${escapeHtml(view.worker)}</td>
       <td>${photoCount ? `<button class="link-btn" data-view="${r.id}">${photoCount} รูป</button>` : '-'}</td>
@@ -2126,7 +2130,7 @@ async function generateHistoryExcel(){
   // "ประเภท" คอลัมน์ใหม่ (ตรวจพื้นที่/เบิกของสโตร์/ขนย้ายเครื่องจักร) ส่วนคอลัมน์ที่เหลือใช้
   // historyRowView() แมปฟิลด์ของ store/machine ลงคอลัมน์เดิมเหมือนกับตารางในแอป (ดูคอมเมนต์
   // ของ historyRowView ด้านบน) เพื่อไม่ต้องเพิ่มคอลัมน์ใหม่อีกชุดใหญ่ในไฟล์ Excel
-  const textHeaders = ['ประเภท','วันที่','ผู้ตรวจ','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
+  const textHeaders = ['ประเภท','วันที่','ผู้ตรวจ','แผนก','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
   const photoHeaders = Array.from({ length: maxPhotos }, (_, i) => `รูปที่ ${i + 1}`);
 
   const wb = new ExcelJS.Workbook();
@@ -2148,7 +2152,7 @@ async function generateHistoryExcel(){
     const view = historyRowView(r);
     const statusText = type === 'inspection' ? r.isNormal : '-';
     const rowObj = ws.addRow([
-      typeLabel(r), toThaiDate(r.checkDate), r.inspector, view.location, view.zone,
+      typeLabel(r), toThaiDate(r.checkDate), r.inspector, r.department, view.location, view.zone,
       statusText, view.issueType || '', view.description || '', view.worker || '', fmtCreatedAt(r),
     ]);
     rowObj.alignment = { vertical: 'middle', wrapText: true };
@@ -2261,7 +2265,7 @@ async function generateReportPdf(){
   docPdf.text('รายงานสรุปผลตรวจเวรวันหยุด', marginX, y); y += 8;
 
   // ผู้ตรวจแสดงครั้งเดียวที่ด้านบน (แต่ละรายงานเป็นของคนตรวจคนเดียวอยู่แล้ว เพราะข้อมูลเก็บแยกตามเครื่อง)
-  const distinctInspectors = [...new Set(rows.map(r => r.inspector))];
+  const distinctInspectors = [...new Set(rows.map(r => `${r.inspector} (${r.department})`))];
   const singleInspector = distinctInspectors.length === 1 ? distinctInspectors[0] : null;
   if(singleInspector){
     docPdf.setFont('Anuphan','bold'); docPdf.setFontSize(12);
@@ -2282,7 +2286,7 @@ async function generateReportPdf(){
     if(rType === 'inspection'){
       line1 = singleInspector
         ? `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}`
-        : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector}`;
+        : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector} (${r.department})`;
       extra = [`ผลตรวจ: ${r.isNormal}` + (r.worker ? `   ผู้ปฏิบัติงาน: ${r.worker}` : '')];
       if(r.isNormal === 'พบสิ่งผิดปกติ'){
         extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
@@ -2295,7 +2299,7 @@ async function generateReportPdf(){
       const typeLbl = typeLabel(r);
       line1 = singleInspector
         ? `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}`
-        : `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}  |  ${r.inspector}`;
+        : `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}  |  ${r.inspector} (${r.department})`;
       extra = rType === 'store'
         ? [`ผู้ขอเบิก: ${r.requesterName || '-'}   รายการ: ${r.itemList || '-'}   จำนวน: ${r.quantity || '-'}`,
            `สาเหตุ: ${r.reason || '-'}   ผู้อนุมัติ: ${r.approver || '-'}`]
@@ -2461,12 +2465,13 @@ async function persistMasterAndRefresh(refresh, successMessage = ''){
 }
 
 /* ---- ผู้ตรวจ (Members) ---- */
-// วาดรายชื่อผู้ตรวจในหน้าตั้งค่าเรียงตามชื่อ
+// วาดรายชื่อผู้ตรวจในหน้าตั้งค่า เรียงตามแผนกแล้วชื่อ
 function renderMemberSettings(){
-  const sorted = [...DBX.members].sort((a,b) => a.name.localeCompare(b.name));
+  const sorted = [...DBX.members].sort((a,b) => (a.department||'').localeCompare(b.department||'') || a.name.localeCompare(b.name));
   renderSettingsList('memberList', sorted, {
     emptyText: 'ยังไม่มีรายชื่อผู้ตรวจ',
     getLine1: m => m.name,
+    getLine2: m => m.department || '-',
     getKey: m => m.id,
     confirmMsg: 'ลบผู้ตรวจคนนี้ออกจาก Master กลางใช่หรือไม่?',
     onEdit: editMember,
@@ -2476,9 +2481,11 @@ function renderMemberSettings(){
 // เพิ่มผู้ตรวจชั่วคราว (แค่เครื่องนี้ หายเมื่อรีเฟรช) จากฟอร์มในหน้าตั้งค่า
 async function addMember(){
   const name = document.getElementById('newMemberName').value.trim();
-  if(!name){ showToast('กรุณากรอกชื่อผู้ตรวจ', 'error'); return; }
-  DBX.members.push({ id: uid(), name });
+  const dept = document.getElementById('newMemberDept').value.trim();
+  if(!name || !dept){ showToast('กรุณากรอกชื่อและแผนกให้ครบ', 'error'); return; }
+  DBX.members.push({ id: uid(), name, department: dept });
   document.getElementById('newMemberName').value = '';
+  document.getElementById('newMemberDept').value = '';
   await persistMasterAndRefresh(refreshMembers, 'เพิ่มผู้ตรวจแล้ว');
 }
 async function editMember(id){
@@ -2486,8 +2493,10 @@ async function editMember(id){
   if(!member) return;
   const name = prompt('ชื่อ-สกุล', member.name);
   if(name === null) return;
-  if(!name.trim()){ showToast('กรุณากรอกชื่อผู้ตรวจ', 'error'); return; }
-  member.name = name.trim();
+  const department = prompt('แผนก', member.department || '');
+  if(department === null) return;
+  if(!name.trim() || !department.trim()){ showToast('กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+  member.name = name.trim(); member.department = department.trim();
   await persistMasterAndRefresh(refreshMembers, 'แก้ไขผู้ตรวจแล้ว');
 }
 
@@ -2601,6 +2610,11 @@ function wireEvents(){
     () => DBX.members.map(m => m.name)
   );
   setupAutocomplete(
+    document.getElementById('newMemberDept'),
+    document.getElementById('deptAutoList'),
+    () => distinctDepartments()
+  );
+  setupAutocomplete(
     document.getElementById('newAreaLocation'),
     document.getElementById('locAutoList'),
     () => distinctLocations()
@@ -2614,6 +2628,7 @@ function wireEvents(){
     if(!state.inspectorName || !state.date){ showToast('กรุณากรอกชื่อผู้ตรวจและวันที่', 'error'); return; }
     const matched = DBX.members.find(m => m.name === state.inspectorName);
     if(!matched){ showToast('ไม่พบชื่อนี้ในรายชื่อผู้ตรวจ กรุณาเลือกจากรายการค้นหา', 'error'); return; }
+    state.department = matched.department || '';
     document.getElementById('viewStart').classList.add('hidden');
     document.getElementById('viewLocations').classList.remove('hidden');
     renderLocationsGrid();
