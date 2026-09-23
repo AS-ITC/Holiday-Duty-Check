@@ -3,208 +3,258 @@
 // ทุกคนที่เปิดแอปจะเห็นข้อมูลชุดเดียวกันเสมอ ไม่ต้องตั้งค่าอะไรเพิ่มนอกจาก GitHub ที่มีอยู่แล้ว
 // หมายเหตุ: อัปเดต 2026-09-19 — areas แยกเป็น location Zone1..Zone13 ตามจริง (17 จุดตรวจ)
 // เพิ่ม orgList (ฝ่าย/แผนกทั้งบริษัท) ไว้ใช้เป็น dropdown ในฟอร์ม 'เบิกของสโตร์'/'ขนย้ายเครื่องจักร'
-// (orgList ไม่เกี่ยวกับข้อมูลผู้ตรวจ — เป็นคนละรายการกัน) ผู้ตรวจใช้ชื่ออย่างเดียว
+// (orgList ไม่เกี่ยวกับ department ของผู้ตรวจ — เป็นคนละรายการกัน) รายชื่อผู้ตรวจ (members) คงไว้เหมือนเดิม
 window.MASTER_DATA = {
   "members": [
     {
       "id": "m22",
       "name": "กัลยา ผลบุญ",
+      "department": "PF1"
     },
     {
       "id": "m40",
       "name": "จันทร์เพ็ญ รุ่งเรือง",
+      "department": "WH"
     },
     {
       "id": "m25",
       "name": "จิราภรณ์ จันทร์แจ่ม",
+      "department": "AC"
     },
     {
       "id": "m19",
       "name": "ชัยวัฒน์ สายทอง",
+      "department": "EN"
     },
     {
       "id": "m24",
       "name": "ชาญชัย ทิพย์รัตน์",
+      "department": "WH"
     },
     {
       "id": "m16",
       "name": "ชาญชัย บัวขาว",
+      "department": "WH"
     },
     {
       "id": "m41",
       "name": "ชาญชัย แก้วมณี",
+      "department": "AC"
     },
     {
       "id": "m32",
       "name": "ดวงใจ รุ่งเรือง",
+      "department": "WH"
     },
     {
       "id": "m11",
       "name": "ธนา ทองดี",
+      "department": "EN"
     },
     {
       "id": "m38",
       "name": "ธิดา อินทร์แก้ว",
+      "department": "PF1"
     },
     {
       "id": "m36",
       "name": "นงลักษณ์ จันทร์แจ่ม",
+      "department": "HR"
     },
     {
       "id": "m21",
       "name": "นงลักษณ์ วงศ์ษา",
+      "department": "PE"
     },
     {
       "id": "m23",
       "name": "นงลักษณ์ แก้วมณี",
+      "department": "PF2"
     },
     {
       "id": "m47",
       "name": "นันทนา บุญมี",
+      "department": "PF2"
     },
     {
       "id": "m1",
       "name": "นันทนา ใจดี",
+      "department": "AC"
     },
     {
       "id": "m43",
       "name": "ประเสริฐ มั่นคง",
+      "department": "EN"
     },
     {
       "id": "m14",
       "name": "ประเสริฐ สายทอง",
+      "department": "PF1"
     },
     {
       "id": "m6",
       "name": "ปราณี โพธิ์ทอง",
+      "department": "PF1"
     },
     {
       "id": "m9",
       "name": "พรทิพย์ ศรีสุข",
+      "department": "AC"
     },
     {
       "id": "m44",
       "name": "พรทิพย์ เพชรรัตน์",
+      "department": "HR"
     },
     {
       "id": "m5",
       "name": "รัตนา รุ่งเรือง",
+      "department": "PE"
     },
     {
       "id": "m42",
       "name": "รัตนา สว่างวงศ์",
+      "department": "CS"
     },
     {
       "id": "m30",
       "name": "วรวุฒิ รุ่งเรือง",
+      "department": "PF1"
     },
     {
       "id": "m10",
       "name": "วรวุฒิ โพธิ์ทอง",
+      "department": "CS"
     },
     {
       "id": "m46",
       "name": "วิชัย วิริยะกุล",
+      "department": "PF1"
     },
     {
       "id": "m17",
       "name": "วิภา แก้วมณี",
+      "department": "AC"
     },
     {
       "id": "m35",
       "name": "วีระ รักงาน",
+      "department": "EN"
     },
     {
       "id": "m48",
       "name": "วีระ หอมจันทร์",
+      "department": "WH"
     },
     {
       "id": "m18",
       "name": "ศิริพร แก้วมณี",
+      "department": "CS"
     },
     {
       "id": "m39",
       "name": "สมบัติ สว่างวงศ์",
+      "department": "PF2"
     },
     {
       "id": "m12",
       "name": "สมศักดิ์ ทองดี",
+      "department": "HR"
     },
     {
       "id": "m37",
       "name": "สมศักดิ์ ผลบุญ",
+      "department": "PE"
     },
     {
       "id": "m29",
       "name": "สมศักดิ์ พูลสวัสดิ์",
+      "department": "PE"
     },
     {
       "id": "m28",
       "name": "สมหญิง รุ่งเรือง",
+      "department": "HR"
     },
     {
       "id": "m45",
       "name": "สายฝน จันทร์แจ่ม",
+      "department": "PE"
     },
     {
       "id": "m33",
       "name": "สิทธิชัย เพชรรัตน์",
+      "department": "AC"
     },
     {
       "id": "m4",
       "name": "สุภาพร อินทร์แก้ว",
+      "department": "HR"
     },
     {
       "id": "m26",
       "name": "สุเมธ รักงาน",
+      "department": "CS"
     },
     {
       "id": "m27",
       "name": "อภิสิทธิ์ เพชรรัตน์",
+      "department": "EN"
     },
     {
       "id": "m7",
       "name": "อรุณี ทองดี",
+      "department": "PF2"
     },
     {
       "id": "m13",
       "name": "อรุณี รุ่งเรือง",
+      "department": "PE"
     },
     {
       "id": "m31",
       "name": "อรุณี หอมจันทร์",
+      "department": "PF2"
     },
     {
       "id": "m2",
       "name": "อัมพร ชูเกียรติ",
+      "department": "CS"
     },
     {
       "id": "m49",
       "name": "อัมพร อินทร์แก้ว",
+      "department": "AC"
     },
     {
       "id": "m34",
       "name": "เพ็ญศรี บุญมี",
+      "department": "CS"
     },
     {
       "id": "m3",
       "name": "เพ็ญศรี รุ่งเรือง",
+      "department": "EN"
     },
     {
       "id": "m15",
       "name": "เพ็ญศรี สุขสันต์",
+      "department": "PF2"
     },
     {
       "id": "m8",
       "name": "เอกชัย ทองดี",
+      "department": "WH"
     },
     {
       "id": "m50",
       "name": "เอกชัย วงศ์ษา",
+      "department": "CS"
     },
     {
       "id": "m20",
       "name": "ไพศาล บุญมี",
+      "department": "HR"
     }
   ],
   "areas": [
