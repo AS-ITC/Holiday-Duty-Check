@@ -334,32 +334,15 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 .empty-hint{text-align:center;color:var(--ink-500);font-size:13px;padding:24px 10px;}
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
 .photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-md);background:var(--border-soft);}
-.auth-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);display:grid;place-items:center;z-index:500;padding:20px;}
-.auth-card{width:min(420px,100%);background:#fff;border-radius:18px;padding:24px;box-shadow:var(--shadow-lg);}
-.auth-card h2{margin-top:0;}
-.auth-card .btn{width:100%;margin-top:12px;}
-.auth-error{color:var(--danger);font-size:13px;min-height:20px;margin:8px 0 0;}
 </style>
 
 <body>
-
-<div id="authOverlay" class="auth-overlay">
-  <form id="authForm" class="auth-card">
-    <h2>เข้าสู่ระบบตรวจเวร</h2>
-    <p style="font-size:13px;color:var(--ink-500);">ข้อมูลผลตรวจและรูปภาพจะถูกจัดเก็บในระบบกลางแบบมีสิทธิ์เข้าถึง</p>
-    <div class="field"><label for="authEmail">อีเมล</label><input id="authEmail" type="email" autocomplete="username" required></div>
-    <div class="field"><label for="authPassword">รหัสผ่าน</label><input id="authPassword" type="password" autocomplete="current-password" required></div>
-    <button class="btn primary" type="submit" id="authSubmit">เข้าสู่ระบบ</button>
-    <button class="btn ghost" type="button" id="authSignup">สร้างบัญชีใหม่</button>
-    <div id="authError" class="auth-error"></div>
-  </form>
-</div>
 
 <div id="app">
   <header id="topbar">
     <div class="brand">🛡️ ตรวจเวรวันหยุด <span style="font-weight:400;font-size:12px;opacity:.85;">(ออฟไลน์)</span></div>
     <div class="topbar-actions">
-      <button id="btnConnStatus" class="chip ok">💾<span class="chip-label"> กำลังเชื่อมต่อระบบ</span></button>
+      <button id="btnConnStatus" class="chip ok">💾<span class="chip-label"> ในเครื่องนี้</span></button>
       <button id="btnSettings" class="icon-btn" title="ตั้งค่า">⚙️</button>
     </div>
   </header>
@@ -586,54 +569,54 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-members" class="settings-panel">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อผู้ตรวจในระบบกลาง ทุกคนเห็นข้อมูลชุดเดียวกัน การเพิ่ม แก้ไข หรือลบจะบันทึกเข้าฐานข้อมูลของระบบ</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้มาจากไฟล์ <b>data.js</b> ในระบบ ทุกคนเห็นชุดเดียวกันเสมอ — แก้ไขได้เฉพาะ <b>Dev</b> เท่านั้น โดยแก้ไฟล์ data.js บน GitHub โดยตรง การเพิ่ม/ลบด้านล่างมีผล<b>แค่เครื่องนี้ชั่วคราว</b> ใช้ดูตัวอย่าง/ทดสอบเท่านั้น ไม่ส่งผลกับคนอื่น</p>
         </div>
         <div class="card">
           <div class="row">
             <div class="field"><label>ชื่อ-สกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมชาย ใจดี"></div>
             <div class="field autocomplete-wrap"><label>แผนก</label><input type="text" id="newMemberDept" autocomplete="off" placeholder="เช่น Maintenance"><div class="autocomplete-list hidden" id="deptAutoList"></div></div>
           </div>
-          <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ</button>
+          <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ (ชั่วคราว)</button>
         </div>
         <div id="memberList"></div>
         <div class="card">
-          <b>Master ผู้ตรวจ</b>
-          <p style="font-size:12px;color:var(--text-soft);">กดปุ่มแก้ไขหรือลบเพื่อจัดการข้อมูลในระบบกลาง</p>
+          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
+          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo ของแอปนี้ (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.members</code>) แล้ว commit — ทุกคนจะเห็นรายชื่อใหม่ภายใน 1-2 นาทีหลัง deploy เสร็จ ไม่ต้องเชื่อมระบบอื่นเพิ่ม</p>
           <button class="btn ghost" id="btnExportMaster">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
         </div>
       </div>
 
       <div id="settings-areas" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนจาก Master กลาง การเพิ่ม แก้ไข หรือลบจะบันทึกเข้าฐานข้อมูลของระบบ</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
         </div>
         <div class="card">
           <div class="row">
             <div class="field autocomplete-wrap"><label>พื้นที่ (Location)</label><input type="text" id="newAreaLocation" autocomplete="off" placeholder="เช่น โรงงาน A"><div class="autocomplete-list hidden" id="locAutoList"></div></div>
             <div class="field"><label>โซน (Zone)</label><input type="text" id="newAreaZone" placeholder="เช่น โซน 1"></div>
           </div>
-          <button class="btn primary" id="btnAddArea">+ เพิ่มพื้นที่/โซน</button>
+          <button class="btn primary" id="btnAddArea">+ เพิ่มพื้นที่/โซน (ชั่วคราว)</button>
         </div>
         <div id="areaList"></div>
         <div class="card">
-          <b>Master พื้นที่/โซน</b>
-          <p style="font-size:12px;color:var(--text-soft);">กดปุ่มแก้ไขหรือลบเพื่อจัดการข้อมูลในระบบกลาง</p>
+          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
+          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.areas</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
           <button class="btn ghost" id="btnExportMaster2">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
         </div>
       </div>
 
       <div id="settings-issues" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ประเภทปัญหาจาก Master กลาง การเพิ่ม แก้ไข หรือลบจะบันทึกเข้าฐานข้อมูลของระบบ</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
         </div>
         <div class="card">
           <div class="field"><label>ประเภทปัญหา</label><input type="text" id="newIssueType" placeholder="เช่น ลมรั่ว"></div>
-          <button class="btn primary" id="btnAddIssueType">+ เพิ่มประเภทปัญหา</button>
+          <button class="btn primary" id="btnAddIssueType">+ เพิ่มประเภทปัญหา (ชั่วคราว)</button>
         </div>
         <div id="issueTypeList"></div>
         <div class="card">
-          <b>Master ประเภทปัญหา</b>
-          <p style="font-size:12px;color:var(--text-soft);">กดปุ่มแก้ไขหรือลบเพื่อจัดการข้อมูลในระบบกลาง</p>
+          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
+          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.issueTypes</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
           <button class="btn ghost" id="btnExportMaster3">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
         </div>
       </div>
@@ -1112,7 +1095,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 </script>
 <!-- ข้อมูลรายชื่อผู้ตรวจ + พื้นที่/โซน ("master data") — ไฟล์แยกต่างหาก แก้ได้เฉพาะ Dev ผ่าน GitHub -->
 <script src="./data.js"></script>
-<script src="./supabase-config.js"></script>
 <script type="module">
 /* ══════════════════════════════════════════════════════════════════════
    ภาพรวมแอป "ตรวจเวรวันหยุด" (Holiday Duty Check) — อ่านก่อนแก้โค้ด
@@ -1191,226 +1173,31 @@ function idbGetAll(store){
 }
 // บันทึก/อัปเดต object ลง store (ใช้ keyPath 'id' ถ้ามี id ซ้ำจะทับของเดิม)
 // return: Promise<object> คืนค่า obj เดิมที่ส่งเข้ามาเมื่อบันทึกสำเร็จ
-async function idbPut(store, obj){
-  await openIdb().then(dbi => new Promise((resolve, reject) => {
+function idbPut(store, obj){
+  return openIdb().then(dbi => new Promise((resolve, reject) => {
     const tx = dbi.transaction(store, 'readwrite');
     tx.objectStore(store).put(obj);
     tx.oncomplete = () => resolve(obj);
     tx.onerror = () => reject(tx.error);
   }));
-  if(store === 'records') await saveRemoteRecord(obj);
-  return obj;
 }
 // ลบ record ตัวเดียวออกจาก store ด้วย id
-async function idbDelete(store, id){
-  await openIdb().then(dbi => new Promise((resolve, reject) => {
+function idbDelete(store, id){
+  return openIdb().then(dbi => new Promise((resolve, reject) => {
     const tx = dbi.transaction(store, 'readwrite');
     tx.objectStore(store).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   }));
-  if(store === 'records') await deleteRemoteRecord(id);
 }
 // ล้างผลตรวจทั้งหมดใน store 'records' ทิ้ง (ใช้ตอนกด "ลบผลตรวจทั้งหมด" ในหน้าตั้งค่า)
-async function idbClearRecords(){
-  await openIdb().then(dbi => new Promise((resolve, reject) => {
+function idbClearRecords(){
+  return openIdb().then(dbi => new Promise((resolve, reject) => {
     const tx = dbi.transaction(['records'], 'readwrite');
     tx.objectStore('records').clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   }));
-  await clearRemoteRecords();
-}
-
-const SUPABASE_URL = window.SUPABASE_CONFIG.url;
-const SUPABASE_KEY = window.SUPABASE_CONFIG.publishableKey;
-const API_BASE = `${SUPABASE_URL}/rest/v1`;
-const AUTH_BASE = `${SUPABASE_URL}/auth/v1`;
-let serverAvailable = null;
-let authSession = null;
-
-async function apiRequest(path, options = {}){
-  const { headers: optionHeaders = {}, ...requestOptions } = options;
-  const response = await fetch(API_BASE + path, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${authSession?.access_token || SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      ...optionHeaders,
-    },
-    ...requestOptions,
-  });
-  const payload = await response.json().catch(() => []);
-  if(!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-  return payload;
-}
-
-async function checkServer(){
-  try{
-    if(!authSession) throw new Error('ยังไม่ได้เข้าสู่ระบบ');
-    await apiRequest('/master_data?select=id&limit=1');
-    serverAvailable = true;
-    const status = document.getElementById('btnConnStatus');
-    status.className = 'chip ok';
-    status.innerHTML = '🟢<span class="chip-label"> เชื่อมต่อระบบกลาง</span>';
-    return true;
-  }catch(error){
-    serverAvailable = false;
-    const status = document.getElementById('btnConnStatus');
-    status.className = 'chip';
-    status.innerHTML = '💾<span class="chip-label"> โหมดในเครื่อง</span>';
-    console.warn('ไม่พบเซิร์ฟเวอร์กลาง ใช้ข้อมูลในเครื่องแทน:', error);
-    return false;
-  }
-}
-
-async function saveRemoteRecord(record){
-  if(serverAvailable !== true) return;
-  await apiRequest('/records?on_conflict=id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({
-      id: record.id,
-      user_id: authSession.user.id,
-      payload: record,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-}
-
-async function deleteRemoteRecord(id){
-  if(serverAvailable !== true) return;
-  await apiRequest(`/records?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-}
-
-async function clearRemoteRecords(){
-  if(serverAvailable !== true) return;
-  await apiRequest('/records', { method: 'DELETE' });
-}
-
-async function saveRemoteMaster(){
-  if(serverAvailable !== true) return;
-  await apiRequest('/master_data?on_conflict=id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({
-      id: 1,
-      payload: {
-        members: DBX.members,
-        areas: DBX.areas,
-        issueTypes: DBX.issueTypes,
-        orgList: DBX.orgList,
-      },
-      updated_by: authSession.user.id,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-}
-
-async function signIn(email, password){
-  const response = await fetch(`${AUTH_BASE}/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const payload = await response.json();
-  if(!response.ok) throw new Error(payload.error_description || payload.msg || 'เข้าสู่ระบบไม่สำเร็จ');
-  authSession = payload;
-  localStorage.setItem('holiday-supabase-session', JSON.stringify(payload));
-}
-
-async function signUp(email, password){
-  const response = await fetch(`${AUTH_BASE}/signup`, {
-    method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const payload = await response.json();
-  if(!response.ok) throw new Error(payload.msg || payload.error_description || 'สร้างบัญชีไม่สำเร็จ');
-  if(payload.access_token) {
-    authSession = payload;
-    localStorage.setItem('holiday-supabase-session', JSON.stringify(payload));
-  } else {
-    throw new Error('สร้างบัญชีแล้ว กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ');
-  }
-
-  async function uploadPhotoData(dataUrl, recordId){
-    if(serverAvailable !== true || !dataUrl.startsWith('data:image/')) return dataUrl;
-    const blob = await (await fetch(dataUrl)).blob();
-    const path = `${authSession.user.id}/${recordId}-${uid()}.jpg`;
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/holiday-photos/${path}`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${authSession.access_token}`,
-        'Content-Type': 'image/jpeg',
-        'x-upsert': 'false',
-      },
-      body: blob,
-    });
-    if(!response.ok) throw new Error('อัปโหลดรูปภาพไม่สำเร็จ');
-    const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/holiday-photos`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${authSession.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ paths: [path], expiresIn: 3600 }),
-    });
-    const signedPayload = await signed.json();
-    if(!signed.ok || !signedPayload?.[0]?.signedURL) throw new Error('สร้างลิงก์รูปภาพไม่สำเร็จ');
-    return { path, url: `${SUPABASE_URL}/storage/v1${signedPayload[0].signedURL}` };
-  }
-
-  function photoUrl(photo){
-    return typeof photo === 'string' ? photo : (photo?.url || '');
-  }
-}
-
-async function initAuth(){
-  try{
-    const stored = localStorage.getItem('holiday-supabase-session');
-    if(stored) authSession = JSON.parse(stored);
-    if(authSession?.access_token){
-      const response = await fetch(`${AUTH_BASE}/user`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${authSession.access_token}` },
-      });
-      if(!response.ok) throw new Error('session expired');
-      authSession.user = await response.json();
-    }
-  }catch(error){
-    authSession = null;
-    localStorage.removeItem('holiday-supabase-session');
-  }
-  document.getElementById('authOverlay').classList.toggle('hidden', Boolean(authSession));
-}
-
-function wireAuth(){
-  const form = document.getElementById('authForm');
-  const errorBox = document.getElementById('authError');
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    errorBox.textContent = '';
-    const button = document.getElementById('authSubmit');
-    button.disabled = true;
-    try{
-      await signIn(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
-      document.getElementById('authOverlay').classList.add('hidden');
-      await loadAll();
-      renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
-    }catch(error){ errorBox.textContent = error.message; }
-    finally{ button.disabled = false; }
-  });
-  document.getElementById('authSignup').addEventListener('click', async () => {
-    errorBox.textContent = '';
-    try{
-      await signUp(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
-      document.getElementById('authOverlay').classList.add('hidden');
-      await loadAll();
-      renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
-    }catch(error){ errorBox.textContent = error.message; }
-  });
 }
 
 /* ======================================================================
@@ -1487,9 +1274,9 @@ function fmtCreatedAt(r){
 // อ่าน window.MASTER_DATA (ตั้งค่าไว้โดย data.js) เข้ามาเก็บใน DBX.members/areas/issueTypes
 // นี่คือจุดเดียวที่แอปนี้ "ดึงข้อมูลส่วนกลาง" — ไม่มีการ fetch เน็ตใด ๆ ทั้งสิ้น
 // return: true ถ้าโหลดสำเร็จ, false ถ้าไม่พบ data.js หรือรูปแบบข้อมูลผิด (จะ toast แจ้ง error ให้)
-function loadMaster(source = window.MASTER_DATA){
+function loadMaster(){
   try{
-    const data = source;
+    const data = window.MASTER_DATA;
     if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
     DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
@@ -1513,19 +1300,9 @@ function loadMaster(source = window.MASTER_DATA){
 // โหลดข้อมูลครั้งแรกตอนเปิดแอป: ผลตรวจจาก IndexedDB + master data จาก data.js
 // เรียกครั้งเดียวตอน INIT ท้ายไฟล์ (ดู ZONE: INIT ด้านล่างสุด)
 async function loadAll(){
-  const localRecords = await idbGetAll('records');
+  const [records] = await Promise.all([idbGetAll('records')]);
   loadMaster();
-  if(await checkServer()){
-    const [masterRows, recordRows] = await Promise.all([
-      apiRequest('/master_data?select=payload&id=eq.1'),
-      apiRequest('/records?select=payload'),
-    ]);
-    loadMaster(masterRows[0]?.payload || window.MASTER_DATA);
-    const remoteRecords = recordRows.map(row => row.payload);
-    DBX.records = remoteRecords.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-  }else{
-    DBX.records = localRecords.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-  }
+  DBX.records = records.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
 }
 // เรียกหลังแก้ DBX.members (เช่นเพิ่ม/ลบผู้ตรวจชั่วคราวในหน้าตั้งค่า) — เรียงชื่อใหม่
 // แล้ว render หน้าจอที่ใช้ members ใหม่ (หน้าเริ่มตรวจ + list ในหน้าตั้งค่า)
@@ -1549,9 +1326,7 @@ function refreshOrgList(){
 // เรียกหลังบันทึก/ลบผลตรวจใน IndexedDB — โหลด records กลับมาใหม่แล้ว render
 // หน้าจอที่แสดงผลตรวจทั้งหมด (สถานะพื้นที่, popup โซนถ้าเปิดอยู่, ตารางประวัติ)
 async function refreshRecords(){
-  const remoteRows = serverAvailable === true ? await apiRequest('/records?select=payload') : null;
-  const records = remoteRows ? remoteRows.map(row => row.payload) : await idbGetAll('records');
-  DBX.records = records.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  DBX.records = (await idbGetAll('records')).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   renderLocationsGrid();
   if(!document.getElementById('modalZones').classList.contains('hidden')) renderZonesBody();
   if(!document.getElementById('modalEventLog').classList.contains('hidden')) renderEventLogList();
@@ -1791,10 +1566,9 @@ async function submitInspectionForm(){
       progress.classList.remove('hidden');
       for(let i=0;i<state.pendingPhotos.length;i++){
         const p = state.pendingPhotos[i];
-        if(typeof p === 'object' && p.path){ photos.push(p); continue; }
-        if(typeof p === 'string' && !p.startsWith('data:image/')){ photos.push(p); continue; }
+        if(typeof p === 'string'){ photos.push(p); continue; } // รูปเดิม ไม่ต้องบีบอัดซ้ำ
         progress.textContent = `กำลังบีบอัดรูป ${i+1}/${state.pendingPhotos.length}...`;
-        photos.push(await uploadPhotoData(await compressImage(p), state.editRecordId || uid()));
+        photos.push(await compressImage(p));
       }
       progress.classList.add('hidden');
     }
@@ -1836,7 +1610,7 @@ function viewRecordPhotos(recordId){
     grid.innerHTML = `<div class="empty-hint">ไม่มีรูปแนบสำหรับจุดนี้</div>`;
     return;
   }
-  grid.innerHTML = rec.photos.map(p => `<img src="${escapeHtml(photoUrl(p))}">`).join('');
+  grid.innerHTML = rec.photos.map(p => `<img src="${p}">`).join('');
 }
 
 /* ======================================================================
@@ -1945,7 +1719,7 @@ function openEventLogForm(recordId){
 function renderEventAttachPreview(){
   const wrap = document.getElementById('eventAttachList');
   wrap.innerHTML = state.pendingEventPhotos.map((p, i) => {
-    const url = (typeof p === 'string' || (p && p.url)) ? photoUrl(p) : URL.createObjectURL(p);
+    const url = (typeof p === 'string') ? p : URL.createObjectURL(p);
     return `<div class="attach-thumb"><img src="${url}"><button class="rm" data-i="${i}">✕</button></div>`;
   }).join('');
   wrap.querySelectorAll('.rm').forEach(b => { b.onclick = () => { state.pendingEventPhotos.splice(Number(b.dataset.i), 1); renderEventAttachPreview(); }; });
@@ -1970,10 +1744,9 @@ async function submitEventLogForm(){
       progress.classList.remove('hidden');
       for(let i=0;i<state.pendingEventPhotos.length;i++){
         const p = state.pendingEventPhotos[i];
-        if(typeof p === 'object' && p.path){ photos.push(p); continue; }
-        if(typeof p === 'string' && !p.startsWith('data:image/')){ photos.push(p); continue; }
+        if(typeof p === 'string'){ photos.push(p); continue; } // รูปเดิม ไม่ต้องบีบอัดซ้ำ
         progress.textContent = `กำลังบีบอัดรูป ${i+1}/${state.pendingEventPhotos.length}...`;
-        photos.push(await uploadPhotoData(await compressImage(p), state.eventEditId || uid()));
+        photos.push(await compressImage(p));
       }
       progress.classList.add('hidden');
     }
@@ -2160,8 +1933,7 @@ async function generateHistoryExcel(){
     const photos = r.photos || [];
     if(photos.length){
       rowObj.height = 58; // points — พอดีกับรูปย่อ 76px
-      photos.forEach((photo, i) => {
-        const dataUrl = photoUrl(photo);
+      photos.forEach((dataUrl, i) => {
         const m = /^data:image\/(\w+);base64,/.exec(dataUrl || '');
         if(!m) return;
         const extension = m[1] === 'jpg' ? 'jpeg' : m[1];
@@ -2327,15 +2099,14 @@ async function generateReportPdf(){
       const boxSize = 36, gap = 4;
       let x = marginX;
       if(y + boxSize > pageH - 15){ docPdf.addPage(); y = 18; }
-      for(const photo of r.photos){
-        const imageUrl = photoUrl(photo);
+      for(const photoUrl of r.photos){
         if(x + boxSize > pageW - marginX){ x = marginX; y += boxSize + gap; }
         if(y + boxSize > pageH - 15){ docPdf.addPage(); y = 18; x = marginX; }
-        const { w, h } = await loadImageSize(imageUrl);
+        const { w, h } = await loadImageSize(photoUrl);
         const scale = Math.min(boxSize / w, boxSize / h);
         const dw = w * scale, dh = h * scale;
         const dx = x + (boxSize - dw) / 2, dy = y + (boxSize - dh) / 2;
-        try{ docPdf.addImage(imageUrl, 'JPEG', dx, dy, dw, dh); }catch(e){ console.error(e); }
+        try{ docPdf.addImage(photoUrl, 'JPEG', dx, dy, dw, dh); }catch(e){ console.error(e); }
         x += boxSize + gap;
       }
       y += boxSize + gap;
@@ -2433,35 +2204,19 @@ async function handleShareEmail(){
 //   getKey          (item) => ค่าที่ใช้ระบุตัวรายการนั้น (เก็บใน data-key ของปุ่มลบ)
 //   confirmMsg      ข้อความยืนยันก่อนลบ (เหมือนกันทั้ง 3 หน้า ต่างแค่คำนามของแต่ละอัน)
 //   onConfirmDelete (key) => แก้ DBX ลบรายการนั้นออก แล้วเรียก refresh ของหน้านั้นต่อ
-function renderSettingsList(wrapId, items, { emptyText, getLine1, getLine2, getKey, confirmMsg, onConfirmDelete, onEdit }){
+function renderSettingsList(wrapId, items, { emptyText, getLine1, getLine2, getKey, confirmMsg, onConfirmDelete }){
   const wrap = document.getElementById(wrapId);
   if(!items.length){ wrap.innerHTML = `<div class="empty-hint">${emptyText}</div>`; return; }
   wrap.innerHTML = items.map(item => {
     const line2 = getLine2 ? getLine2(item) : '';
-    const editButton = onEdit ? `<button class="iconbtn-mini edit" data-key="${escapeHtml(getKey(item))}">✏️</button>` : '';
-    return `<div class="list-row"><div class="info"><b>${escapeHtml(getLine1(item))}</b>${line2 ? `<span>${escapeHtml(line2)}</span>` : ''}</div><div>${editButton}<button class="iconbtn-mini del" data-key="${escapeHtml(getKey(item))}">🗑</button></div></div>`;
+    return `<div class="list-row"><div class="info"><b>${escapeHtml(getLine1(item))}</b>${line2 ? `<span>${escapeHtml(line2)}</span>` : ''}</div><button class="iconbtn-mini del" data-key="${escapeHtml(getKey(item))}">🗑</button></div>`;
   }).join('');
-  wrap.querySelectorAll('.edit').forEach(b => { b.onclick = () => onEdit(b.dataset.key); });
   wrap.querySelectorAll('.del').forEach(b => {
     b.onclick = () => {
       if(!confirm(confirmMsg)) return;
       onConfirmDelete(b.dataset.key);
     };
   });
-}
-async function persistMasterAndRefresh(refresh, successMessage = ''){
-  try{
-    await saveRemoteMaster();
-    refresh();
-    if(serverAvailable === true){
-      if(successMessage) showToast(successMessage, 'success');
-    }else{
-      showToast('ยังไม่เชื่อมต่อระบบกลาง — การเปลี่ยนแปลงนี้มีผลเฉพาะเครื่องนี้', 'error');
-    }
-  }catch(error){
-    console.error('บันทึก Master ไม่สำเร็จ', error);
-    showToast('บันทึก Master ไม่สำเร็จ: ' + error.message, 'error');
-  }
 }
 
 /* ---- ผู้ตรวจ (Members) ---- */
@@ -2473,31 +2228,20 @@ function renderMemberSettings(){
     getLine1: m => m.name,
     getLine2: m => m.department || '-',
     getKey: m => m.id,
-    confirmMsg: 'ลบผู้ตรวจคนนี้ออกจาก Master กลางใช่หรือไม่?',
-    onEdit: editMember,
-    onConfirmDelete: async (id) => { DBX.members = DBX.members.filter(m => m.id !== id); await persistMasterAndRefresh(refreshMembers); },
+    confirmMsg: 'ลบผู้ตรวจคนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
+    onConfirmDelete: (id) => { DBX.members = DBX.members.filter(m => m.id !== id); refreshMembers(); },
   });
 }
 // เพิ่มผู้ตรวจชั่วคราว (แค่เครื่องนี้ หายเมื่อรีเฟรช) จากฟอร์มในหน้าตั้งค่า
-async function addMember(){
+function addMember(){
   const name = document.getElementById('newMemberName').value.trim();
   const dept = document.getElementById('newMemberDept').value.trim();
   if(!name || !dept){ showToast('กรุณากรอกชื่อและแผนกให้ครบ', 'error'); return; }
   DBX.members.push({ id: uid(), name, department: dept });
   document.getElementById('newMemberName').value = '';
   document.getElementById('newMemberDept').value = '';
-  await persistMasterAndRefresh(refreshMembers, 'เพิ่มผู้ตรวจแล้ว');
-}
-async function editMember(id){
-  const member = DBX.members.find(item => item.id === id);
-  if(!member) return;
-  const name = prompt('ชื่อ-สกุล', member.name);
-  if(name === null) return;
-  const department = prompt('แผนก', member.department || '');
-  if(department === null) return;
-  if(!name.trim() || !department.trim()){ showToast('กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-  member.name = name.trim(); member.department = department.trim();
-  await persistMasterAndRefresh(refreshMembers, 'แก้ไขผู้ตรวจแล้ว');
+  showToast('เพิ่มผู้ตรวจแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  refreshMembers();
 }
 
 /* ---- พื้นที่ / โซน (Areas) ---- */
@@ -2509,31 +2253,20 @@ function renderAreaSettings(){
     getLine1: a => a.location,
     getLine2: a => a.zone,
     getKey: a => a.id,
-    confirmMsg: 'ลบพื้นที่/โซนนี้ออกจาก Master กลางใช่หรือไม่?',
-    onEdit: editArea,
-    onConfirmDelete: async (id) => { DBX.areas = DBX.areas.filter(a => a.id !== id); await persistMasterAndRefresh(refreshAreas); },
+    confirmMsg: 'ลบพื้นที่/โซนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
+    onConfirmDelete: (id) => { DBX.areas = DBX.areas.filter(a => a.id !== id); refreshAreas(); },
   });
 }
 // เพิ่มพื้นที่/โซนชั่วคราว — order คำนวณจากจำนวนโซนที่มีอยู่แล้วของพื้นที่นั้น (ต่อท้ายลำดับ)
-async function addArea(){
+function addArea(){
   const location = document.getElementById('newAreaLocation').value.trim();
   const zone = document.getElementById('newAreaZone').value.trim();
   if(!location || !zone){ showToast('กรุณากรอกพื้นที่และโซนให้ครบ', 'error'); return; }
   const order = DBX.areas.filter(a => a.location === location).length;
   DBX.areas.push({ id: uid(), location, zone, order });
   document.getElementById('newAreaZone').value = '';
-  await persistMasterAndRefresh(refreshAreas, 'เพิ่มพื้นที่/โซนแล้ว');
-}
-async function editArea(id){
-  const area = DBX.areas.find(item => item.id === id);
-  if(!area) return;
-  const location = prompt('พื้นที่ (Location)', area.location);
-  if(location === null) return;
-  const zone = prompt('โซน (Zone)', area.zone);
-  if(zone === null) return;
-  if(!location.trim() || !zone.trim()){ showToast('กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
-  area.location = location.trim(); area.zone = zone.trim();
-  await persistMasterAndRefresh(refreshAreas, 'แก้ไขพื้นที่/โซนแล้ว');
+  showToast('เพิ่มพื้นที่/โซนแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  refreshAreas();
 }
 
 /* ---- ประเภทปัญหา (Issue Types) — มาจาก data.js เช่นเดียวกับผู้ตรวจ/พื้นที่ ---- */
@@ -2551,27 +2284,19 @@ function renderIssueTypeSettings(){
     emptyText: 'ยังไม่มีประเภทปัญหา',
     getLine1: t => t,
     getKey: t => t,
-    confirmMsg: 'ลบประเภทปัญหานี้ออกจาก Master กลางใช่หรือไม่?',
-    onEdit: editIssueType,
-    onConfirmDelete: async (val) => { DBX.issueTypes = DBX.issueTypes.filter(t => t !== val); await persistMasterAndRefresh(refreshIssueTypes); },
+    confirmMsg: 'ลบประเภทปัญหานี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
+    onConfirmDelete: (val) => { DBX.issueTypes = DBX.issueTypes.filter(t => t !== val); refreshIssueTypes(); },
   });
 }
 // เพิ่มประเภทปัญหาชั่วคราว (กันเพิ่มชื่อซ้ำของเดิม)
-async function addIssueType(){
+function addIssueType(){
   const value = document.getElementById('newIssueType').value.trim();
   if(!value){ showToast('กรุณากรอกชื่อประเภทปัญหา', 'error'); return; }
   if(DBX.issueTypes.includes(value)){ showToast('มีประเภทปัญหานี้อยู่แล้ว', 'error'); return; }
   DBX.issueTypes.push(value);
   document.getElementById('newIssueType').value = '';
-  await persistMasterAndRefresh(refreshIssueTypes, 'เพิ่มประเภทปัญหาแล้ว');
-}
-async function editIssueType(value){
-  const next = prompt('ประเภทปัญหา', value);
-  if(next === null) return;
-  if(!next.trim()){ showToast('กรุณากรอกประเภทปัญหา', 'error'); return; }
-  if(DBX.issueTypes.includes(next.trim()) && next.trim() !== value){ showToast('มีประเภทปัญหานี้อยู่แล้ว', 'error'); return; }
-  DBX.issueTypes[DBX.issueTypes.indexOf(value)] = next.trim();
-  await persistMasterAndRefresh(refreshIssueTypes, 'แก้ไขประเภทปัญหาแล้ว');
+  showToast('เพิ่มประเภทปัญหาแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  refreshIssueTypes();
 }
 
 /* ======================================================================
@@ -2696,25 +2421,21 @@ function wireEvents(){
    + IndexedDB (loadAll, เป็น async รอไม่ทัน) 3) พอโหลดเสร็จค่อย render หน้าจอ
    ทุกส่วนด้วยข้อมูลที่โหลดมาได้
    ====================================================================== */
-wireAuth();
 wireEvents();
 document.getElementById('dpDate').value = state.date;
-initAuth().then(() => {
-  if(!authSession) return;
-  return loadAll().then(() => {
-    renderStartScreen();
-    renderLocationsGrid();
-    renderMemberSettings();
-    renderAreaSettings();
-    renderIssueTypeOptions();
-    renderIssueTypeSettings();
-    refreshOrgList();
-    renderHistoryFilters();
-    renderHistoryTable();
-  });
+loadAll().then(() => {
+  renderStartScreen();
+  renderLocationsGrid();
+  renderMemberSettings();
+  renderAreaSettings();
+  renderIssueTypeOptions();
+  renderIssueTypeSettings();
+  refreshOrgList();
+  renderHistoryFilters();
+  renderHistoryTable();
 }).catch(e => {
   console.error(e);
-  document.getElementById('authError').textContent = 'โหลดระบบไม่สำเร็จ: ' + e.message;
+  showToast('โหลดข้อมูลจากเครื่องไม่สำเร็จ: ' + e.message, 'error');
 });
 </script>
 </body>
