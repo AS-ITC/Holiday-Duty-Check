@@ -4,10 +4,6 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   role text not null default 'user' check (role in ('user', 'admin', 'poweruser', 'superuser')),
-  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
-  password_changed_at timestamptz not null default now(),
-  approved_at timestamptz,
-  approved_by uuid references auth.users(id),
   created_at timestamptz not null default now()
 );
 
@@ -15,30 +11,13 @@ alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check
   check (role in ('user', 'admin', 'poweruser', 'superuser'));
 
-alter table public.profiles add column if not exists status text;
-alter table public.profiles add column if not exists password_changed_at timestamptz;
-alter table public.profiles add column if not exists approved_at timestamptz;
-alter table public.profiles add column if not exists approved_by uuid references auth.users(id);
-update public.profiles
-set status = coalesce(status, 'approved'),
-    password_changed_at = coalesce(password_changed_at, now())
-where status is null or password_changed_at is null;
-alter table public.profiles alter column status set default 'pending';
-alter table public.profiles alter column status set not null;
-alter table public.profiles alter column password_changed_at set default now();
-alter table public.profiles alter column password_changed_at set not null;
-alter table public.profiles drop constraint if exists profiles_status_check;
-alter table public.profiles add constraint profiles_status_check
-  check (status in ('pending', 'approved', 'rejected'));
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, status, password_changed_at)
-  values (new.id, new.email, 'pending', now())
+  insert into public.profiles (id, email) values (new.id, new.email)
   on conflict (id) do update set email = excluded.email;
   return new;
 end;
@@ -112,10 +91,7 @@ drop policy if exists "superusers manage profiles" on public.profiles;
 create policy "superusers manage profiles" on public.profiles
   for update to authenticated
   using (public.is_superuser())
-  with check (
-    role in ('user', 'admin', 'poweruser', 'superuser')
-    and status in ('pending', 'approved', 'rejected')
-  );
+  with check (role in ('user', 'admin', 'poweruser', 'superuser'));
 
 drop policy if exists "authenticated read master" on public.master_data;
 create policy "authenticated read master" on public.master_data
@@ -162,7 +138,5 @@ create policy "users delete own holiday photos admins all" on storage.objects
   for delete to authenticated
   using (bucket_id = 'holiday-photos' and (owner_id = auth.uid()::text or public.is_admin()));
 
--- หลังรัน Schema ให้ยกระดับ Admin เดิมเป็น Superuser และอนุมัติ:
--- update public.profiles
--- set role = 'superuser', status = 'approved', approved_at = now()
--- where email = 'อีเมล-Admin-เดิม';
+-- หลังสร้างผู้ใช้ Admin คนแรก ให้รันคำสั่งนี้ใน SQL Editor:
+-- update public.profiles set role = 'superuser' where email = 'admin@example.com';

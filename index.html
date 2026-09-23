@@ -1311,17 +1311,14 @@ async function clearRemoteRecords(){
 
 async function loadCurrentProfile(){
   if(!authSession?.user?.id){ currentProfile = null; updateSettingsAccess(); return; }
-  const rows = await apiRequest(`/profiles?select=id,email,role,status,password_changed_at&id=eq.${encodeURIComponent(authSession.user.id)}`);
+  const rows = await apiRequest(`/profiles?select=id,email,role&id=eq.${encodeURIComponent(authSession.user.id)}`);
   currentProfile = rows[0] || null;
   updateSettingsAccess();
-  if(!currentProfile) throw new Error('ไม่พบข้อมูลสิทธิ์ผู้ใช้งาน');
-  if(currentProfile.status !== 'approved') throw new Error('บัญชีนี้ยังรอ Superuser อนุมัติ');
-  await ensurePasswordFresh();
 }
 
 async function loadUserProfiles(){
   if(!isSuperuser()) throw new Error('เฉพาะ Superuser เท่านั้นที่จัดการสิทธิ์ผู้ใช้ได้');
-  return apiRequest('/profiles?select=id,email,role,status,created_at&order=email.asc');
+  return apiRequest('/profiles?select=id,email,role,created_at&order=email.asc');
 }
 
 function roleLabel(role){
@@ -1335,45 +1332,6 @@ async function updateUserRole(id, role){
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({ role }),
   });
-}
-
-async function updateUserStatus(id, status){
-  if(!isSuperuser()) throw new Error('ไม่มีสิทธิ์อนุมัติผู้ใช้');
-  await apiRequest(`/profiles?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      status,
-      approved_at: status === 'approved' ? new Date().toISOString() : null,
-      approved_by: status === 'approved' ? authSession.user.id : null,
-    }),
-  });
-}
-
-async function callAccountAdmin(body){
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/account-admin`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${authSession.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if(!response.ok) throw new Error(payload.error || 'ดำเนินการบัญชีไม่สำเร็จ');
-  return payload;
-}
-
-async function ensurePasswordFresh(){
-  const changedAt = Date.parse(currentProfile.password_changed_at || '');
-  if(!changedAt || Date.now() - changedAt < 180 * 24 * 60 * 60 * 1000) return;
-  const nextPassword = prompt('รหัสผ่านหมดอายุแล้ว กรุณาตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)');
-  if(!nextPassword) throw new Error('ต้องเปลี่ยนรหัสผ่านก่อนใช้งานระบบ');
-  if(nextPassword.length < 8) throw new Error('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-  await callAccountAdmin({ action: 'change-self', temporaryPassword: nextPassword });
-  currentProfile.password_changed_at = new Date().toISOString();
-  showToast('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
 }
 
 async function saveRemoteMaster(){
@@ -1419,7 +1377,7 @@ async function signUp(email, password){
     authSession = payload;
     localStorage.setItem('holiday-supabase-session', JSON.stringify(payload));
   } else {
-    throw new Error('ลงทะเบียนแล้ว กรุณารอ Superuser อนุมัติบัญชีก่อนเข้าสู่ระบบ');
+    throw new Error('สร้างบัญชีแล้ว กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ');
   }
 
   async function uploadPhotoData(dataUrl, recordId){
@@ -1491,25 +1449,17 @@ function wireAuth(){
       document.getElementById('authOverlay').classList.add('hidden');
       await loadAll();
       renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
-    }catch(error){
-      authSession = null;
-      currentProfile = null;
-      localStorage.removeItem('holiday-supabase-session');
-      updateSettingsAccess();
-      errorBox.textContent = error.message;
-    }
+    }catch(error){ errorBox.textContent = error.message; }
     finally{ button.disabled = false; }
   });
   document.getElementById('authSignup').addEventListener('click', async () => {
     errorBox.textContent = '';
     try{
       await signUp(document.getElementById('authEmail').value.trim(), document.getElementById('authPassword').value);
-      if(authSession){
-        await loadCurrentProfile();
-        document.getElementById('authOverlay').classList.add('hidden');
-        await loadAll();
-        renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
-      }
+      await loadCurrentProfile();
+      document.getElementById('authOverlay').classList.add('hidden');
+      await loadAll();
+      renderStartScreen(); renderLocationsGrid(); renderHistoryFilters(); renderHistoryTable();
     }catch(error){ errorBox.textContent = error.message; }
   });
 }
@@ -2702,14 +2652,10 @@ async function renderUserSettings(){
   try{
     const users = await loadUserProfiles();
     wrap.innerHTML = users.map(user => `<div class="list-row">
-      <div class="info"><b>${escapeHtml(user.email || user.id)}</b><span>สถานะ: ${escapeHtml(user.status)} · ${escapeHtml(user.id)}</span></div>
-      <div>
+      <div class="info"><b>${escapeHtml(user.email || user.id)}</b><span>${escapeHtml(user.id)}</span></div>
       <select class="user-role" data-user-id="${escapeHtml(user.id)}" aria-label="สิทธิ์ของ ${escapeHtml(user.email || user.id)}">
         ${['user','admin','poweruser','superuser'].map(role => `<option value="${role}"${user.role === role ? ' selected' : ''}>${roleLabel(role)}</option>`).join('')}
       </select>
-      ${user.status !== 'approved' ? `<button class="btn secondary approve-user" data-user-id="${escapeHtml(user.id)}">อนุมัติ</button>` : ''}
-      <button class="btn ghost reset-user-password" data-user-id="${escapeHtml(user.id)}">ตั้งรหัสผ่านใหม่</button>
-      </div>
     </div>`).join('');
     wrap.querySelectorAll('.user-role').forEach(select => {
       select.addEventListener('change', async () => {
@@ -2729,28 +2675,6 @@ async function renderUserSettings(){
         }finally{
           select.disabled = false;
         }
-      });
-    });
-    wrap.querySelectorAll('.approve-user').forEach(button => {
-      button.addEventListener('click', async () => {
-        button.disabled = true;
-        try{
-          await updateUserStatus(button.dataset.userId, 'approved');
-          await renderUserSettings();
-          showToast('อนุมัติผู้ใช้แล้ว', 'success');
-        }catch(error){ showToast('อนุมัติไม่สำเร็จ: ' + error.message, 'error'); button.disabled = false; }
-      });
-    });
-    wrap.querySelectorAll('.reset-user-password').forEach(button => {
-      button.addEventListener('click', async () => {
-        const temporaryPassword = prompt('กำหนดรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)');
-        if(!temporaryPassword) return;
-        button.disabled = true;
-        try{
-          await callAccountAdmin({ action: 'reset-user', targetUserId: button.dataset.userId, temporaryPassword });
-          showToast('ตั้งรหัสผ่านใหม่แล้ว', 'success');
-        }catch(error){ showToast('ตั้งรหัสผ่านไม่สำเร็จ: ' + error.message, 'error'); }
-        finally{ button.disabled = false; }
       });
     });
   }catch(error){
