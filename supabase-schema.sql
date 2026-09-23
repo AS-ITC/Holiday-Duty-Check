@@ -3,13 +3,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
-  role text not null default 'user' check (role in ('user', 'admin', 'poweruser', 'superuser')),
+  role text not null default 'user' check (role in ('user', 'admin')),
   created_at timestamptz not null default now()
 );
-
-alter table public.profiles drop constraint if exists profiles_role_check;
-alter table public.profiles add constraint profiles_role_check
-  check (role in ('user', 'admin', 'poweruser', 'superuser'));
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -36,31 +32,7 @@ security definer set search_path = public
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role in ('admin', 'poweruser', 'superuser')
-  );
-$$;
-
-create or replace function public.is_poweruser()
-returns boolean
-language sql
-stable
-security definer set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role in ('poweruser', 'superuser')
-  );
-$$;
-
-create or replace function public.is_superuser()
-returns boolean
-language sql
-stable
-security definer set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'superuser'
+    where id = auth.uid() and role = 'admin'
   );
 $$;
 
@@ -85,13 +57,7 @@ alter table public.records enable row level security;
 
 drop policy if exists "profiles own row" on public.profiles;
 create policy "profiles own row" on public.profiles
-  for select to authenticated using (id = auth.uid() or public.is_superuser());
-
-drop policy if exists "superusers manage profiles" on public.profiles;
-create policy "superusers manage profiles" on public.profiles
-  for update to authenticated
-  using (public.is_superuser())
-  with check (role in ('user', 'admin', 'poweruser', 'superuser'));
+  for select to authenticated using (id = auth.uid() or public.is_admin());
 
 drop policy if exists "authenticated read master" on public.master_data;
 create policy "authenticated read master" on public.master_data
@@ -99,7 +65,7 @@ create policy "authenticated read master" on public.master_data
 
 drop policy if exists "admins write master" on public.master_data;
 create policy "admins write master" on public.master_data
-  for all to authenticated using (public.is_poweruser()) with check (public.is_poweruser());
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "authenticated read records" on public.records;
 create policy "authenticated read records" on public.records
@@ -139,4 +105,4 @@ create policy "users delete own holiday photos admins all" on storage.objects
   using (bucket_id = 'holiday-photos' and (owner_id = auth.uid()::text or public.is_admin()));
 
 -- หลังสร้างผู้ใช้ Admin คนแรก ให้รันคำสั่งนี้ใน SQL Editor:
--- update public.profiles set role = 'superuser' where email = 'admin@example.com';
+-- update public.profiles set role = 'admin' where email = 'admin@example.com';
