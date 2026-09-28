@@ -172,7 +172,13 @@ input,select,textarea{font-family:inherit;}
 }
 .row{display:flex;gap:10px;}
 .row>*{flex:1;}
-.row.btn-row{margin-top:10px;}
+.row.btn-row{margin-top:10px;gap:14px;}
+/* จอมือถือแคบ: ปุ่ม 2 ปุ่มในแถวเดียวกัน (เช่นแท็บประวัติ) เบียดกันจนตัวหนังสือขึ้น 2 บรรทัด
+   แล้วเงา box-shadow ของปุ่มสีล้น (โดยเฉพาะ .btn.primary) ไปทับปุ่มข้าง ๆ ดูเหมือนปุ่มซ้อนกัน —
+   ต่ำกว่า 480px ให้ปุ่มในแถวนี้เรียงเป็นคอลัมน์เดียวเต็มความกว้างแทน ไม่มีทางเบียด/ซ้อนกันได้เลย */
+@media (max-width:480px){
+  .row.btn-row{flex-direction:column;}
+}
 
 .photo-capture-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
@@ -205,7 +211,7 @@ input,select,textarea{font-family:inherit;}
 .btn:disabled{opacity:0.6;}
 .btn.primary{
   background:linear-gradient(135deg, var(--coral-500), var(--coral-600));
-  box-shadow:0 4px 14px rgba(249,83,109,.3);
+  box-shadow:0 3px 8px rgba(249,83,109,.28);
 }
 .btn.primary:hover{background:linear-gradient(135deg, var(--coral-600), var(--coral-600));}
 .btn.secondary{background:var(--paper);color:var(--ink-700);border:1.5px solid var(--border);}
