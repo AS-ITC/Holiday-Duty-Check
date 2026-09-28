@@ -244,6 +244,7 @@ input,select,textarea{font-family:inherit;}
    แยกจากปุ่มพื้นที่ (เหลือง/ฟ้า/เขียว) เพราะเป็นคนละประเภทงาน ไม่ใช่สถานะรอตรวจ/ตรวจแล้ว */
 .loc-btn.eventlog{background:linear-gradient(135deg, var(--coral-500), var(--coral-600));}
 .loc-btn .loc-name{font-size:15px;font-weight:700;}
+.loc-btn .loc-desc{font-size:11.5px;font-weight:600;opacity:0.85;margin-top:-4px;}
 .loc-status{
   font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.28);
 }
@@ -1237,7 +1238,7 @@ function idbClearRecords(){
            พื้นที่/โซนที่เพิ่งเลือก, รูปที่แนบไว้แต่ยังไม่กดบันทึก) อยู่แค่ระหว่าง
            เปิดหน้าเว็บ รีเฟรชแล้วรีเซ็ตใหม่ทั้งหมด
    ====================================================================== */
-const DBX = { members: [], areas: [], issueTypes: [], orgList: [], records: [] };
+const DBX = { members: [], areas: [], zoneGroups: [], issueTypes: [], orgList: [], records: [] };
 const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
 const state = {
   date: todayStr(),
@@ -1306,6 +1307,10 @@ function loadMaster(){
     if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
     DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
+    // zoneGroups (ชื่อ/คำอธิบายของแต่ละ ZoneN เช่น "Pilot Plant") ใช้แสดงเป็นบรรทัดที่ 2 ใต้ชื่อ
+    // โซนบนปุ่มหน้าพื้นที่ตรวจเท่านั้น — ไม่บังคับต้องมีใน data.js (เก่า ๆ ที่ยังไม่อัปเดตจะแค่ไม่มี
+    // บรรทัดที่ 2 โชว์ ไม่ error)
+    DBX.zoneGroups = Array.isArray(data.zoneGroups) ? data.zoneGroups : [];
     // issueTypes เป็นของใหม่ — ถ้า data.js ยังไม่ได้อัปเดตให้มีรายการนี้ ใช้ค่าเริ่มต้นไปก่อน
     DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
     // orgList (ฝ่าย/แผนกทั้งบริษัท) — ใช้เป็น dropdown ในฟอร์ม "เบิกของสโตร์"/"ขนย้ายเครื่องจักร"
@@ -1314,7 +1319,7 @@ function loadMaster(){
     return true;
   }catch(e){
     console.error('loadMaster failed', e);
-    DBX.members = []; DBX.areas = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice(); DBX.orgList = [];
+    DBX.members = []; DBX.areas = []; DBX.zoneGroups = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice(); DBX.orgList = [];
     showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js) ไม่สำเร็จ: ' + e.message, 'error');
     return false;
   }
@@ -1364,6 +1369,11 @@ async function refreshRecords(){
    (ไม่มีข้อมูลใหม่ แค่แปลง/กรอง DBX ที่มีอยู่ให้ใช้งานง่ายขึ้น)
    ====================================================================== */
 function distinctLocations(){ return [...new Set(DBX.areas.map(a => a.location).filter(Boolean))]; }
+// คำอธิบายของ ZoneN (เช่น "Pilot Plant") จาก DBX.zoneGroups — คืนค่าว่างถ้าไม่มีข้อมูล (ไม่ error)
+function zoneGroupDesc(loc){
+  const g = DBX.zoneGroups.find(z => z.location === loc);
+  return g ? (g.desc || '') : '';
+}
 function zonesOfLocation(loc){ return DBX.areas.filter(a => a.location === loc); }
 // รายชื่อ "ฝ่าย" ที่ไม่ซ้ำจาก DBX.orgList — คงลำดับตามที่ปรากฏก่อน-หลังใน data.js (ไม่เรียง a-z)
 // เพราะ Set ใน JS คงลำดับ insertion ไว้ให้อยู่แล้ว ตรงกับที่ผู้ใช้ขอ (ไม่ต้องเรียงเอง)
@@ -1446,7 +1456,9 @@ function renderLocationsGrid(){
         if(st.state === 'pending') tag = `<span class="loc-status pending">รอตรวจ</span>`;
         else if(st.state === 'progress') tag = `<span class="loc-status progress">กำลังตรวจ ${st.checkedZones}/${st.totalZones}</span>`;
         else tag = `<span class="loc-status">✅ ตรวจแล้ว</span>`;
-        return `<button class="${cls}" data-loc="${escapeHtml(loc)}"><span class="loc-name">${escapeHtml(loc)}</span>${tag}</button>`;
+        const desc = zoneGroupDesc(loc);
+        const descHtml = desc ? `<span class="loc-desc">(${escapeHtml(desc)})</span>` : '';
+        return `<button class="${cls}" data-loc="${escapeHtml(loc)}"><span class="loc-name">${escapeHtml(loc)}</span>${descHtml}${tag}</button>`;
       }).join('');
   // การ์ดพิเศษ 2 อัน "เบิกของสโตร์"/"ขนย้ายเครื่องจักร" — ไม่ใช่ location จาก DBX.areas เหมือน
   // ปุ่มด้านบน แต่เป็นทางเข้า modal บันทึกเหตุการณ์แยกต่างหาก (รายการอิสระ กรอกได้เรื่อยๆ
