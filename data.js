@@ -417,28 +417,22 @@ window.MASTER_DATA = {
     "order": 3
   },
   {
-    "id": "a38",
-    "location": "Zone9",
-    "zone": "-",
-    "order": 0
-  },
-  {
     "id": "a39",
     "location": "Zone9",
     "zone": "ทางเดินเข้าไลน์ผลิต",
-    "order": 1
+    "order": 0
   },
   {
     "id": "a40",
     "location": "Zone9",
     "zone": "ทางเดินลูกค้า",
-    "order": 2
+    "order": 1
   },
   {
     "id": "a41",
     "location": "Zone9",
     "zone": "พื้นที่อื่นๆ เช่น ห้องน้ำพนักงาน /ห้องน้ำลูกค้า /Meeting Room",
-    "order": 3
+    "order": 2
   },
   {
     "id": "a42",

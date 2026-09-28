@@ -343,9 +343,12 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 /* ---- toast ---- */
 #toast{
   position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
-  background:var(--ink-900);color:#fff;padding:12px 20px;border-radius:var(--radius-pill);font-size:14px;
-  box-shadow:var(--shadow-lg);z-index:200;max-width:90vw;text-align:center;
+  background:var(--ink-900);color:#fff;padding:12px 20px;border-radius:16px;font-size:14px;
+  box-shadow:var(--shadow-lg);z-index:200;max-width:90vw;text-align:center;line-height:1.5;
 }
+/* border-radius แบบ pill (999px) เดิมใช้ได้ดีกับข้อความสั้นบรรทัดเดียว แต่ข้อความยาวหลายบรรทัด
+   (เช่น แจ้งรายชื่อโซนที่ยังตรวจไม่ครบ) จะทำให้กล่องกลมจนกลายเป็นก้อนบิดเบี้ยวอ่านยาก —
+   เปลี่ยนเป็นขอบมนปกติ (16px) ให้อ่านง่ายทั้งข้อความสั้นและยาว */
 #toast.error{background:var(--danger);}
 #toast.success{background:var(--green);}
 
@@ -2328,7 +2331,13 @@ async function handleExportExcel(){
 async function handleShareEmail(){
   const zoneCheck = allZonesCompleted();
   if(!zoneCheck.complete){
-    showToast(`ตรวจยังไม่ครบทุกโซน (เหลือ ${zoneCheck.incompleteLocs.join(', ')}) กรุณาตรวจให้ครบก่อนส่งอีเมล`, 'error');
+    // แสดงชื่อโซนที่ยังไม่ครบสูงสุด 5 โซนแรกพอ (ไม่งั้นถ้าเพิ่งเริ่มเวรจะไม่ครบเกือบทุกโซน
+    // ข้อความจะยาวมากจนอ่านยาก) ที่เหลือสรุปเป็นตัวเลขแทน
+    const MAX_SHOW = 5;
+    const shown = zoneCheck.incompleteLocs.slice(0, MAX_SHOW).join(', ');
+    const remain = zoneCheck.incompleteLocs.length - MAX_SHOW;
+    const list = remain > 0 ? `${shown} และอีก ${remain} โซน` : shown;
+    showToast(`ตรวจยังไม่ครบทุกโซน (เหลือ ${list}) กรุณาตรวจให้ครบก่อนส่งอีเมล`, 'error');
     return;
   }
   await withBusyButton('btnHistEmail', 'กำลังเตรียมไฟล์...', async () => {
