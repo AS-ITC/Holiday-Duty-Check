@@ -375,12 +375,6 @@ window.MASTER_DATA = {
     "order": 3
   },
   {
-    "id": "a31",
-    "location": "Zone7",
-    "zone": "-",
-    "order": 0
-  },
-  {
     "id": "a32",
     "location": "Zone7",
     "zone": "ทางเดินเข้าไลน์ผลิต",
