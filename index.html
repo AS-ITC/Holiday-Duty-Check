@@ -171,18 +171,17 @@ input,select,textarea{font-family:inherit;}
   font-size:15px;background:#fff;color:var(--text);resize:vertical;min-height:80px;
 }
 .row{display:flex;gap:10px;}
-.row>*{flex:1;}
-.date-range-row>.field{flex:1 1 0;min-width:0;}
-.date-range-row input[type=date]{box-sizing:border-box;min-width:0;max-width:100%;}
+.row>*{flex:1;min-width:0;}
 .row.btn-row{margin-top:10px;gap:14px;}
 /* จอมือถือแคบ: ปุ่ม 2 ปุ่มในแถวเดียวกัน (เช่นแท็บประวัติ) เบียดกันจนตัวหนังสือขึ้น 2 บรรทัด
    แล้วเงา box-shadow ของปุ่มสีล้น (โดยเฉพาะ .btn.primary) ไปทับปุ่มข้าง ๆ ดูเหมือนปุ่มซ้อนกัน —
    ต่ำกว่า 480px ให้ปุ่มในแถวนี้เรียงเป็นคอลัมน์เดียวเต็มความกว้างแทน ไม่มีทางเบียด/ซ้อนกันได้เลย */
-@media (max-width:560px){
-  .row.date-range-row{flex-direction:column;gap:0;}
-}
+/* input[type=date] บนมือถือ (โดยเฉพาะ iOS Safari) แสดงผลวันที่เต็มรูปแบบ (เช่น "28 Sep BE 2569")
+   ซึ่งกว้างกว่าที่ flex:1 แบ่งให้ (ครึ่งจอ) ทำให้ล้นออกนอกกรอบจนไปทับช่องข้าง ๆ —
+   ต่ำกว่า 480px ให้ 2 ช่อง "ตั้งแต่วันที่/ถึงวันที่" เรียงเป็นคอลัมน์เดียวเต็มความกว้างแทน */
 @media (max-width:480px){
   .row.btn-row{flex-direction:column;}
+  .row.row-dates{flex-direction:column;}
 }
 
 .photo-capture-btn{
@@ -404,7 +403,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
     <!-- ================= TAB: HISTORY ================= -->
     <section id="tab-history" class="tab-panel hidden">
       <div class="card">
-        <div class="row date-range-row">
+        <div class="row row-dates">
           <div class="field"><label>ตั้งแต่วันที่</label><input type="date" id="histFrom"></div>
           <div class="field"><label>ถึงวันที่</label><input type="date" id="histTo"></div>
         </div>
