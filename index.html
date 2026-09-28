@@ -416,13 +416,13 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         </div>
         <div class="row btn-row">
           <button class="btn secondary" id="btnHistPdf">📄 ออกรายงาน PDF</button>
-          <button class="btn primary" id="btnHistEmail">📧 ส่ง PDF ทางอีเมล</button>
+          <button class="btn primary" id="btnHistEmail">📧 ส่ง PDF + Excel ทางอีเมล</button>
         </div>
       </div>
       <div class="table-wrap">
         <table id="histTable">
           <thead><tr>
-            <th>ประเภท</th><th>วันที่</th><th>ผู้ตรวจ</th><th>แผนก</th><th>พื้นที่</th><th>โซน</th>
+            <th>ประเภท</th><th>วันที่</th><th>ผู้ตรวจ</th><th>พื้นที่</th><th>โซน</th>
             <th>สถานะ</th><th>ประเภทปัญหา</th><th>รายละเอียด</th><th>ผู้ปฏิบัติงาน</th><th>รูป</th><th>บันทึกเมื่อ</th><th></th>
           </tr></thead>
           <tbody id="histTbody"></tbody>
@@ -511,7 +511,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="eventLogFormView" class="hidden">
         <button class="btn ghost" id="btnEventLogBack" style="margin-bottom:12px;">← กลับไปหน้ารายการ</button>
-        <div class="row">
+        <div class="row" id="eventOrgFields">
           <div class="field"><label>ฝ่าย</label><select id="ddEventFaction"></select></div>
           <div class="field"><label>แผนก</label><select id="ddEventDept"></select></div>
         </div>
@@ -536,6 +536,34 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <div class="field"><label>สาเหตุ</label><input type="text" id="evMachineReason" placeholder="เหตุผลที่ต้องขนย้าย"></div>
           <div class="field"><label>ผู้อนุมัติ</label><input type="text" id="evMachineApprover" placeholder="ชื่อผู้อนุมัติ"></div>
           <div class="field"><label>หัวหน้าชุด รปภ ประจำวันหยุด</label><input type="text" id="evMachineGuardLead" placeholder="ชื่อหัวหน้าชุด รปภ"></div>
+        </div>
+
+        <!-- ฟิลด์เฉพาะ "รายงานการเกิดอุบัติเหตุ" -->
+        <div id="eventFieldsAccident" class="hidden">
+          <div class="field"><label>สถานที่เกิดเหตุ</label><input type="text" id="accLocation" placeholder="เช่น Zone5 - บรรจุ"></div>
+          <div class="field"><label>ผู้ประสบเหตุ</label><input type="text" id="accVictim" placeholder="ชื่อ-สกุล"></div>
+          <div class="field"><label>หน่วยงาน</label><input type="text" id="accUnit" placeholder="หน่วยงานของผู้ประสบเหตุ"></div>
+          <div class="field"><label>รายละเอียดเหตุการณ์</label><textarea id="accDetail" placeholder="อธิบายเหตุการณ์ที่เกิดขึ้น..."></textarea></div>
+          <div class="field"><label>ผู้เกี่ยวข้องที่รับทราบ (หัวหน้างาน/จป./ผู้บริหาร)</label><input type="text" id="accAcknowledger" placeholder="ชื่อผู้รับทราบ"></div>
+          <div class="field">
+            <label>ผลกระทบ</label>
+            <div class="pill-group" id="pillAccidentImpact">
+              <button type="button" class="pill" data-value="ไม่มีผู้บาดเจ็บ">ไม่มีผู้บาดเจ็บ</button>
+              <button type="button" class="pill" data-value="บาดเจ็บเล็กน้อย">บาดเจ็บเล็กน้อย</button>
+              <button type="button" class="pill" data-value="บาดเจ็บต้องพบแพทย์">บาดเจ็บต้องพบแพทย์</button>
+              <button type="button" class="pill" data-value="อื่นๆ">อื่นๆ</button>
+            </div>
+          </div>
+          <div class="field hidden" id="accImpactOtherField"><label>ระบุผลกระทบอื่นๆ</label><input type="text" id="accImpactOther" placeholder="ระบุ"></div>
+        </div>
+
+        <!-- ฟิลด์เฉพาะ "ผู้รับเหมาขอเข้าพื้นที่ (นอกแผน)" -->
+        <div id="eventFieldsContractor" class="hidden">
+          <div class="field"><label>บริษัท</label><input type="text" id="conCompany" placeholder="ชื่อบริษัทผู้รับเหมา"></div>
+          <div class="field"><label>ผู้ประสานงาน</label><input type="text" id="conCoordinator" placeholder="ชื่อผู้ประสานงาน"></div>
+          <div class="field"><label>จำนวนผู้เข้าปฏิบัติงาน</label><input type="text" id="conCount" placeholder="เช่น 3 คน"></div>
+          <div class="field"><label>พื้นที่ปฏิบัติงาน</label><input type="text" id="conArea" placeholder="เช่น Zone11 - ลานโหลด"></div>
+          <div class="field"><label>วัตถุประสงค์การเข้าพื้นที่</label><input type="text" id="conPurpose" placeholder="วัตถุประสงค์การเข้าพื้นที่"></div>
         </div>
 
         <div class="field">
@@ -574,7 +602,6 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         <div class="card">
           <div class="row">
             <div class="field"><label>ชื่อ-สกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมชาย ใจดี"></div>
-            <div class="field autocomplete-wrap"><label>แผนก</label><input type="text" id="newMemberDept" autocomplete="off" placeholder="เช่น Maintenance"><div class="autocomplete-list hidden" id="deptAutoList"></div></div>
           </div>
           <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ (ชั่วคราว)</button>
         </div>
@@ -1214,7 +1241,6 @@ const DBX = { members: [], areas: [], issueTypes: [], orgList: [], records: [] }
 const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
 const state = {
   date: todayStr(),
-  department: '',
   inspectorName: '',
   selectedLocation: null,
   selectedZone: null,
@@ -1337,8 +1363,6 @@ async function refreshRecords(){
    ZONE: DERIVED DATA HELPERS — ฟังก์ชันช่วยดึง/คำนวณข้อมูลจาก DBX
    (ไม่มีข้อมูลใหม่ แค่แปลง/กรอง DBX ที่มีอยู่ให้ใช้งานง่ายขึ้น)
    ====================================================================== */
-function distinctDepartments(){ return [...new Set(DBX.members.map(m => (m.department||'').trim()).filter(Boolean))].sort(); }
-function membersByDepartment(dept){ return DBX.members.filter(m => (m.department||'') === dept); }
 function distinctLocations(){ return [...new Set(DBX.areas.map(a => a.location).filter(Boolean))]; }
 function zonesOfLocation(loc){ return DBX.areas.filter(a => a.location === loc); }
 // รายชื่อ "ฝ่าย" ที่ไม่ซ้ำจาก DBX.orgList — คงลำดับตามที่ปรากฏก่อน-หลังใน data.js (ไม่เรียง a-z)
@@ -1362,7 +1386,6 @@ function locationStatus(loc){
    ZONE: RENDER - หน้าเริ่มตรวจ (เลือกชื่อผู้ตรวจ/วันที่)
    ====================================================================== */
 // หน้าแรกไม่มีการเลือกแผนกแล้ว — ค้นหาชื่อผู้ตรวจได้จากรายชื่อทั้งหมดเลย
-// (state.department จะถูก derive อัตโนมัติจากสมาชิกที่เลือก ใน btnNext ตอนกดเริ่มตรวจ)
 function renderStartScreen(){
   renderInspectorOptions();
   document.getElementById('dpDate').value = state.date;
@@ -1430,6 +1453,8 @@ function renderLocationsGrid(){
   // ไม่ใช่ checklist ตายตัวแบบโซน จึงโชว์แค่จำนวนรายการทั้งหมด ไม่ใช่สถานะรอตรวจ/ตรวจแล้ว)
   html += renderEventLogCard('store', '📦 เบิกของสโตร์');
   html += renderEventLogCard('machine', '🚚 ขนย้ายเครื่องจักร/อะไหล่');
+  html += renderEventLogCard('accident', '🚑 รายงานการเกิดอุบัติเหตุ');
+  html += renderEventLogCard('contractor', '👷 ผู้รับเหมาขอเข้าพื้นที่ (นอกแผน)');
   grid.innerHTML = html;
   grid.querySelectorAll('.loc-btn[data-loc]').forEach(btn => { btn.onclick = () => openZonesModal(btn.dataset.loc); });
   grid.querySelectorAll('.loc-btn[data-eventtype]').forEach(btn => { btn.onclick = () => openEventLogModal(btn.dataset.eventtype); });
@@ -1578,7 +1603,6 @@ async function submitInspectionForm(){
       recordType: 'inspection',
       checkDate: existing ? existing.checkDate : state.date,
       inspector: existing ? existing.inspector : state.inspectorName,
-      department: existing ? existing.department : state.department,
       location: state.selectedLocation,
       zone: state.selectedZone,
       isNormal: status,
@@ -1619,9 +1643,15 @@ function viewRecordPhotos(recordId){
    เพื่อให้ไปโผล่ในแท็บประวัติ + ออก Excel/PDF ได้เหมือนผลตรวจพื้นที่)
    ====================================================================== */
 // เปิด modal บันทึกเหตุการณ์ (type: 'store' | 'machine') — เริ่มที่หน้ารายการเสมอ
+const EVENT_LOG_TITLES = {
+  store: 'บันทึกเบิกของสโตร์',
+  machine: 'บันทึกขนย้ายเครื่องจักร/อะไหล่',
+  accident: 'รายงานการเกิดอุบัติเหตุ',
+  contractor: 'ผู้รับเหมาขอเข้าพื้นที่ (นอกแผน)',
+};
 function openEventLogModal(type){
   state.eventLogType = type;
-  document.getElementById('eventLogTitle').textContent = type === 'store' ? 'บันทึกเบิกของสโตร์' : 'บันทึกขนย้ายเครื่องจักร/อะไหล่';
+  document.getElementById('eventLogTitle').textContent = EVENT_LOG_TITLES[type] || 'บันทึก';
   showEventLogListView();
   showModal('modalEventLog');
 }
@@ -1639,10 +1669,20 @@ function renderEventLogList(){
   const rows = DBX.records.filter(r => r.recordType === type).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   if(!rows.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีรายการ</div>`; return; }
   wrap.innerHTML = rows.map(r => {
-    const line1 = type === 'store' ? (r.itemList || '-') : (r.detail || '-');
-    const line2 = type === 'store'
-      ? `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | จำนวน ${r.quantity || '-'} | ผู้ขอเบิก ${r.requesterName || '-'}`
-      : `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | ${r.itemType || '-'} | จำนวน ${r.quantity || '-'}`;
+    let line1, line2;
+    if(type === 'store'){
+      line1 = r.itemList || '-';
+      line2 = `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | จำนวน ${r.quantity || '-'} | ผู้ขอเบิก ${r.requesterName || '-'}`;
+    } else if(type === 'machine'){
+      line1 = r.detail || '-';
+      line2 = `${toThaiDate(r.checkDate)} | ${r.orgDept || '-'} | ${r.itemType || '-'} | จำนวน ${r.quantity || '-'}`;
+    } else if(type === 'accident'){
+      line1 = r.accLocation || '-';
+      line2 = `${toThaiDate(r.checkDate)} | ผู้ประสบเหตุ ${r.accVictim || '-'} | ผลกระทบ ${r.accImpact === 'อื่นๆ' ? (r.accImpactOther || 'อื่นๆ') : (r.accImpact || '-')}`;
+    } else { // contractor
+      line1 = r.conCompany || '-';
+      line2 = `${toThaiDate(r.checkDate)} | ผู้ประสาน ${r.conCoordinator || '-'} | จำนวน ${r.conCount || '-'} | พื้นที่ ${r.conArea || '-'}`;
+    }
     return `<div class="list-row">
       <div class="info"><b>${escapeHtml(line1)}</b><span>${escapeHtml(line2)}</span></div>
       <button class="iconbtn-mini edit" data-id="${r.id}" title="แก้ไขรายการนี้">✏️</button>
@@ -1680,15 +1720,23 @@ function openEventLogForm(recordId){
   // แยกชนิดกันตอนบันทึกจริงใน submitEventLogForm()
   state.pendingEventPhotos = (rec && rec.photos) ? rec.photos.slice() : [];
 
-  renderEventFactionOptions();
-  const ddFaction = document.getElementById('ddEventFaction');
-  const ddDept = document.getElementById('ddEventDept');
-  ddFaction.value = rec ? (rec.faction || '') : (ddFaction.options[0] ? ddFaction.options[0].value : '');
-  renderEventDeptOptions(ddFaction.value);
-  if(rec) ddDept.value = rec.orgDept || '';
+  // ฟอร์ม "เบิกของสโตร์"/"ขนย้ายเครื่องจักร" เท่านั้นที่ใช้ dropdown ฝ่าย/แผนกจาก orgList —
+  // "รายงานอุบัติเหตุ"/"ผู้รับเหมาเข้าพื้นที่" เป็นฟิลด์อิสระ ไม่เกี่ยวกับ orgList เลย
+  const needsOrgFields = (type === 'store' || type === 'machine');
+  document.getElementById('eventOrgFields').classList.toggle('hidden', !needsOrgFields);
+  if(needsOrgFields){
+    renderEventFactionOptions();
+    const ddFaction = document.getElementById('ddEventFaction');
+    const ddDept = document.getElementById('ddEventDept');
+    ddFaction.value = rec ? (rec.faction || '') : (ddFaction.options[0] ? ddFaction.options[0].value : '');
+    renderEventDeptOptions(ddFaction.value);
+    if(rec) ddDept.value = rec.orgDept || '';
+  }
 
   document.getElementById('eventFieldsStore').classList.toggle('hidden', type !== 'store');
   document.getElementById('eventFieldsMachine').classList.toggle('hidden', type !== 'machine');
+  document.getElementById('eventFieldsAccident').classList.toggle('hidden', type !== 'accident');
+  document.getElementById('eventFieldsContractor').classList.toggle('hidden', type !== 'contractor');
 
   if(type === 'store'){
     document.getElementById('evStoreRequester').value = rec ? (rec.requesterName || '') : '';
@@ -1696,13 +1744,28 @@ function openEventLogForm(recordId){
     document.getElementById('evStoreQty').value = rec ? (rec.quantity || '') : '';
     document.getElementById('evStoreReason').value = rec ? (rec.reason || '') : '';
     document.getElementById('evStoreApprover').value = rec ? (rec.approver || '') : '';
-  } else {
+  } else if(type === 'machine'){
     document.getElementById('evMachineType').value = rec ? (rec.itemType || 'เครื่องจักร') : 'เครื่องจักร';
     document.getElementById('evMachineDetail').value = rec ? (rec.detail || '') : '';
     document.getElementById('evMachineQty').value = rec ? (rec.quantity || '') : '';
     document.getElementById('evMachineReason').value = rec ? (rec.reason || '') : '';
     document.getElementById('evMachineApprover').value = rec ? (rec.approver || '') : '';
     document.getElementById('evMachineGuardLead').value = rec ? (rec.guardLead || '') : '';
+  } else if(type === 'accident'){
+    document.getElementById('accLocation').value = rec ? (rec.accLocation || '') : '';
+    document.getElementById('accVictim').value = rec ? (rec.accVictim || '') : '';
+    document.getElementById('accUnit').value = rec ? (rec.accUnit || '') : '';
+    document.getElementById('accDetail').value = rec ? (rec.accDetail || '') : '';
+    document.getElementById('accAcknowledger').value = rec ? (rec.accAcknowledger || '') : '';
+    document.getElementById('accImpactOther').value = rec ? (rec.accImpactOther || '') : '';
+    document.getElementById('pillAccidentImpact').querySelectorAll('.pill').forEach(p => p.classList.toggle('selected', !!rec && p.dataset.value === rec.accImpact));
+    document.getElementById('accImpactOtherField').classList.toggle('hidden', !(rec && rec.accImpact === 'อื่นๆ'));
+  } else { // contractor
+    document.getElementById('conCompany').value = rec ? (rec.conCompany || '') : '';
+    document.getElementById('conCoordinator').value = rec ? (rec.conCoordinator || '') : '';
+    document.getElementById('conCount').value = rec ? (rec.conCount || '') : '';
+    document.getElementById('conArea').value = rec ? (rec.conArea || '') : '';
+    document.getElementById('conPurpose').value = rec ? (rec.conPurpose || '') : '';
   }
 
   document.getElementById('fileEventPhotos').value = '';
@@ -1724,15 +1787,24 @@ function renderEventAttachPreview(){
   }).join('');
   wrap.querySelectorAll('.rm').forEach(b => { b.onclick = () => { state.pendingEventPhotos.splice(Number(b.dataset.i), 1); renderEventAttachPreview(); }; });
 }
-// กด "บันทึก"/"บันทึกการแก้ไข" — ตรวจแบบเบามือแค่ต้องเลือกฝ่าย+แผนกแล้ว (ผู้ใช้ขอไม่ให้
-// บังคับกรอกทุกช่อง เพราะเป็นการจดบันทึกตามที่พบจริงหน้างาน) บีบอัดเฉพาะรูปใหม่ (File)
+// กด "บันทึก"/"บันทึกการแก้ไข" — ตรวจแบบเบามือ (ผู้ใช้ขอไม่ให้บังคับกรอกทุกช่อง เพราะเป็นการ
+// จดบันทึกตามที่พบจริงหน้างาน) บังคับแค่ฟิลด์หลักของแต่ละประเภท: store/machine ต้องเลือกฝ่าย+แผนก,
+// accident ต้องมีสถานที่เกิดเหตุ, contractor ต้องมีชื่อบริษัท — บีบอัดเฉพาะรูปใหม่ (File)
 // ส่วนรูปเดิม (string, ตอนแก้ไข) ใช้ค่าเดิมไม่บีบอัดซ้ำ แล้ว idbPut ลง store 'records'
 // เดียวกับผลตรวจพื้นที่ (id เดิมถ้าเป็นการแก้ไข, id ใหม่ถ้าเป็นการเพิ่มรายการ)
 async function submitEventLogForm(){
   const type = state.eventLogType;
-  const faction = document.getElementById('ddEventFaction').value;
-  const orgDept = document.getElementById('ddEventDept').value;
-  if(!faction || !orgDept){ showToast('กรุณาเลือกฝ่ายและแผนกก่อนกดบันทึก', 'error'); return; }
+  const needsOrgFields = (type === 'store' || type === 'machine');
+  let faction = '', orgDept = '';
+  if(needsOrgFields){
+    faction = document.getElementById('ddEventFaction').value;
+    orgDept = document.getElementById('ddEventDept').value;
+    if(!faction || !orgDept){ showToast('กรุณาเลือกฝ่ายและแผนกก่อนกดบันทึก', 'error'); return; }
+  } else if(type === 'accident'){
+    if(!document.getElementById('accLocation').value.trim()){ showToast('กรุณากรอกสถานที่เกิดเหตุก่อนกดบันทึก', 'error'); return; }
+  } else if(type === 'contractor'){
+    if(!document.getElementById('conCompany').value.trim()){ showToast('กรุณากรอกชื่อบริษัทก่อนกดบันทึก', 'error'); return; }
+  }
 
   const btn = document.getElementById('btnSaveEventLog');
   const progress = document.getElementById('eventUploadProgress');
@@ -1757,26 +1829,49 @@ async function submitEventLogForm(){
       recordType: type,
       checkDate: state.date,
       inspector: state.inspectorName,
-      department: state.department,
-      faction, orgDept, photos,
+      photos,
       createdAt: existing ? (existing.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
-    const record = type === 'store'
-      ? Object.assign(base, {
-          requesterName: document.getElementById('evStoreRequester').value.trim(),
-          itemList: document.getElementById('evStoreItem').value.trim(),
-          quantity: document.getElementById('evStoreQty').value.trim(),
-          reason: document.getElementById('evStoreReason').value.trim(),
-          approver: document.getElementById('evStoreApprover').value.trim(),
-        })
-      : Object.assign(base, {
-          itemType: document.getElementById('evMachineType').value,
-          detail: document.getElementById('evMachineDetail').value.trim(),
-          quantity: document.getElementById('evMachineQty').value.trim(),
-          reason: document.getElementById('evMachineReason').value.trim(),
-          approver: document.getElementById('evMachineApprover').value.trim(),
-          guardLead: document.getElementById('evMachineGuardLead').value.trim(),
-        });
+    if(needsOrgFields) Object.assign(base, { faction, orgDept });
+
+    let record;
+    if(type === 'store'){
+      record = Object.assign(base, {
+        requesterName: document.getElementById('evStoreRequester').value.trim(),
+        itemList: document.getElementById('evStoreItem').value.trim(),
+        quantity: document.getElementById('evStoreQty').value.trim(),
+        reason: document.getElementById('evStoreReason').value.trim(),
+        approver: document.getElementById('evStoreApprover').value.trim(),
+      });
+    } else if(type === 'machine'){
+      record = Object.assign(base, {
+        itemType: document.getElementById('evMachineType').value,
+        detail: document.getElementById('evMachineDetail').value.trim(),
+        quantity: document.getElementById('evMachineQty').value.trim(),
+        reason: document.getElementById('evMachineReason').value.trim(),
+        approver: document.getElementById('evMachineApprover').value.trim(),
+        guardLead: document.getElementById('evMachineGuardLead').value.trim(),
+      });
+    } else if(type === 'accident'){
+      const impact = currentPillValue('pillAccidentImpact');
+      record = Object.assign(base, {
+        accLocation: document.getElementById('accLocation').value.trim(),
+        accVictim: document.getElementById('accVictim').value.trim(),
+        accUnit: document.getElementById('accUnit').value.trim(),
+        accDetail: document.getElementById('accDetail').value.trim(),
+        accAcknowledger: document.getElementById('accAcknowledger').value.trim(),
+        accImpact: impact,
+        accImpactOther: impact === 'อื่นๆ' ? document.getElementById('accImpactOther').value.trim() : '',
+      });
+    } else { // contractor
+      record = Object.assign(base, {
+        conCompany: document.getElementById('conCompany').value.trim(),
+        conCoordinator: document.getElementById('conCoordinator').value.trim(),
+        conCount: document.getElementById('conCount').value.trim(),
+        conArea: document.getElementById('conArea').value.trim(),
+        conPurpose: document.getElementById('conPurpose').value.trim(),
+      });
+    }
 
     await idbPut('records', record);
     showToast('บันทึกข้อมูลสำเร็จแล้ว', 'success');
@@ -1835,13 +1930,16 @@ function typeLabel(r){
   const t = r.recordType || 'inspection';
   if(t === 'store') return 'เบิกของสโตร์';
   if(t === 'machine') return 'ขนย้ายเครื่องจักร/อะไหล่';
+  if(t === 'accident') return 'รายงานอุบัติเหตุ';
+  if(t === 'contractor') return 'ผู้รับเหมาเข้าพื้นที่';
   return 'ตรวจพื้นที่';
 }
 // แปลง record ให้พอดีกับคอลัมน์ตารางประวัติที่ออกแบบไว้สำหรับ "ผลตรวจพื้นที่" เดิม (พื้นที่/โซน/
-// ประเภทปัญหา/รายละเอียด/ผู้ปฏิบัติงาน) — record ประเภท store/machine ไม่มีฟิลด์พวกนี้ตรงๆ จึงแมป
-// ฟิลด์ที่ใกล้เคียงที่สุดลงคอลัมน์เดิมแทน (แทนที่จะเพิ่มคอลัมน์ใหม่อีก 5-6 คอลัมน์ที่ว่างเปล่า
-// เกือบตลอดเวลา): พื้นที่→ฝ่าย, โซน→แผนก, ประเภทปัญหา→ประเภทของ (เฉพาะ machine),
-// ผู้ปฏิบัติงาน→ผู้ขอเบิก/หัวหน้าชุด รปภ, รายละเอียด→สรุปฟิลด์ที่เหลือรวมกันเป็นข้อความเดียว
+// ประเภทปัญหา/รายละเอียด/ผู้ปฏิบัติงาน) — record ประเภทอื่นไม่มีฟิลด์พวกนี้ตรงๆ จึงแมป
+// ฟิลด์ที่ใกล้เคียงที่สุดลงคอลัมน์เดิมแทน (แทนที่จะเพิ่มคอลัมน์ใหม่อีกชุดที่ว่างเปล่า
+// เกือบตลอดเวลา): store/machine พื้นที่→ฝ่าย โซน→แผนก, accident พื้นที่→สถานที่เกิดเหตุ
+// โซน→หน่วยงาน ประเภทปัญหา→ผลกระทบ ผู้ปฏิบัติงาน→ผู้ประสบเหตุ, contractor พื้นที่→พื้นที่ปฏิบัติงาน
+// โซน→บริษัท ผู้ปฏิบัติงาน→ผู้ประสานงาน, รายละเอียด→สรุปฟิลด์ที่เหลือรวมกันเป็นข้อความเดียว
 function historyRowView(r){
   const type = r.recordType || 'inspection';
   if(type === 'inspection'){
@@ -1854,10 +1952,25 @@ function historyRowView(r){
       worker: r.requesterName || '-',
     };
   }
-  return { // machine
-    location: r.faction || '-', zone: r.orgDept || '-', issueType: r.itemType || '-',
-    description: `รายละเอียด: ${r.detail || '-'} | จำนวน: ${r.quantity || '-'} | สาเหตุ: ${r.reason || '-'} | ผู้อนุมัติ: ${r.approver || '-'}`,
-    worker: r.guardLead || '-',
+  if(type === 'machine'){
+    return {
+      location: r.faction || '-', zone: r.orgDept || '-', issueType: r.itemType || '-',
+      description: `รายละเอียด: ${r.detail || '-'} | จำนวน: ${r.quantity || '-'} | สาเหตุ: ${r.reason || '-'} | ผู้อนุมัติ: ${r.approver || '-'}`,
+      worker: r.guardLead || '-',
+    };
+  }
+  if(type === 'accident'){
+    return {
+      location: r.accLocation || '-', zone: r.accUnit || '-',
+      issueType: r.accImpact === 'อื่นๆ' ? (r.accImpactOther || 'อื่นๆ') : (r.accImpact || '-'),
+      description: `รายละเอียดเหตุการณ์: ${r.accDetail || '-'} | ผู้รับทราบ: ${r.accAcknowledger || '-'}`,
+      worker: r.accVictim || '-',
+    };
+  }
+  return { // contractor
+    location: r.conArea || '-', zone: r.conCompany || '-', issueType: '-',
+    description: `วัตถุประสงค์: ${r.conPurpose || '-'} | จำนวนคน: ${r.conCount || '-'}`,
+    worker: r.conCoordinator || '-',
   };
 }
 // วาดตารางประวัติทั้งหมดตามผลของ filteredHistoryRecords() พร้อมปุ่มดูรูป/ลบรายการ
@@ -1874,7 +1987,7 @@ function renderHistoryTable(){
       : (r.isNormal === 'พบสิ่งผิดปกติ' ? `<span class="status-badge issue">พบสิ่งผิดปกติ</span>` : `<span class="status-badge normal">ปกติ</span>`);
     return `<tr>
       <td>${escapeHtml(typeLabel(r))}</td>
-      <td>${toThaiDate(r.checkDate)}</td><td>${escapeHtml(r.inspector)}</td><td>${escapeHtml(r.department)}</td>
+      <td>${toThaiDate(r.checkDate)}</td><td>${escapeHtml(r.inspector)}</td>
       <td>${escapeHtml(view.location)}</td><td>${escapeHtml(view.zone)}</td><td>${badge}</td>
       <td>${escapeHtml(view.issueType)}</td><td>${escapeHtml(view.description)}</td><td>${escapeHtml(view.worker)}</td>
       <td>${photoCount ? `<button class="link-btn" data-view="${r.id}">${photoCount} รูป</button>` : '-'}</td>
@@ -1903,7 +2016,7 @@ async function generateHistoryExcel(){
   // "ประเภท" คอลัมน์ใหม่ (ตรวจพื้นที่/เบิกของสโตร์/ขนย้ายเครื่องจักร) ส่วนคอลัมน์ที่เหลือใช้
   // historyRowView() แมปฟิลด์ของ store/machine ลงคอลัมน์เดิมเหมือนกับตารางในแอป (ดูคอมเมนต์
   // ของ historyRowView ด้านบน) เพื่อไม่ต้องเพิ่มคอลัมน์ใหม่อีกชุดใหญ่ในไฟล์ Excel
-  const textHeaders = ['ประเภท','วันที่','ผู้ตรวจ','แผนก','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
+  const textHeaders = ['ประเภท','วันที่','ผู้ตรวจ','พื้นที่','โซน','สถานะ','ประเภทปัญหา','รายละเอียด','ผู้ปฏิบัติงาน','บันทึกเมื่อ'];
   const photoHeaders = Array.from({ length: maxPhotos }, (_, i) => `รูปที่ ${i + 1}`);
 
   const wb = new ExcelJS.Workbook();
@@ -1925,7 +2038,7 @@ async function generateHistoryExcel(){
     const view = historyRowView(r);
     const statusText = type === 'inspection' ? r.isNormal : '-';
     const rowObj = ws.addRow([
-      typeLabel(r), toThaiDate(r.checkDate), r.inspector, r.department, view.location, view.zone,
+      typeLabel(r), toThaiDate(r.checkDate), r.inspector, view.location, view.zone,
       statusText, view.issueType || '', view.description || '', view.worker || '', fmtCreatedAt(r),
     ]);
     rowObj.alignment = { vertical: 'middle', wrapText: true };
@@ -2037,7 +2150,7 @@ async function generateReportPdf(){
   docPdf.text('รายงานสรุปผลตรวจเวรวันหยุด', marginX, y); y += 8;
 
   // ผู้ตรวจแสดงครั้งเดียวที่ด้านบน (แต่ละรายงานเป็นของคนตรวจคนเดียวอยู่แล้ว เพราะข้อมูลเก็บแยกตามเครื่อง)
-  const distinctInspectors = [...new Set(rows.map(r => `${r.inspector} (${r.department})`))];
+  const distinctInspectors = [...new Set(rows.map(r => r.inspector))];
   const singleInspector = distinctInspectors.length === 1 ? distinctInspectors[0] : null;
   if(singleInspector){
     docPdf.setFont('Anuphan','bold'); docPdf.setFontSize(12);
@@ -2058,7 +2171,7 @@ async function generateReportPdf(){
     if(rType === 'inspection'){
       line1 = singleInspector
         ? `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}`
-        : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector} (${r.department})`;
+        : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector}`;
       extra = [`ผลตรวจ: ${r.isNormal}` + (r.worker ? `   ผู้ปฏิบัติงาน: ${r.worker}` : '')];
       if(r.isNormal === 'พบสิ่งผิดปกติ'){
         extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
@@ -2071,7 +2184,7 @@ async function generateReportPdf(){
       const typeLbl = typeLabel(r);
       line1 = singleInspector
         ? `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}`
-        : `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}  |  ${r.inspector} (${r.department})`;
+        : `${toThaiDate(r.checkDate)}  |  ${typeLbl}: ${r.faction || '-'} - ${r.orgDept || '-'}  |  ${r.inspector}`;
       extra = rType === 'store'
         ? [`ผู้ขอเบิก: ${r.requesterName || '-'}   รายการ: ${r.itemList || '-'}   จำนวน: ${r.quantity || '-'}`,
            `สาเหตุ: ${r.reason || '-'}   ผู้อนุมัติ: ${r.approver || '-'}`]
@@ -2154,22 +2267,29 @@ async function handleExportExcel(){
     showToast('ส่งออกไฟล์ Excel แล้ว', 'success');
   }, 'สร้างไฟล์ Excel ไม่สำเร็จ');
 }
-// ปุ่ม "ส่ง PDF ทางอีเมล": ใช้ Web Share API ถ้าเบราว์เซอร์รองรับ (ส่วนใหญ่คือมือถือ) —
-// เปิดหน้าต่างแชร์ของระบบให้เลือกแอปอีเมลได้เลยพร้อมไฟล์แนบ ถ้าไม่รองรับ (เช่นคอมพิวเตอร์
-// ส่วนใหญ่) จะดาวน์โหลด PDF ให้แทน แล้วเปิด mailto: ดราฟต์อีเมลเตือนให้แนบไฟล์เอง
-// (เบราว์เซอร์ทั่วไปไม่อนุญาตให้แนบไฟล์อัตโนมัติผ่าน mailto:)
+// ปุ่ม "ส่ง PDF + Excel ทางอีเมล": สร้างทั้ง PDF และ Excel จากข้อมูลชุดเดียวกัน (filteredHistoryRecords()
+// ตอนนั้น) แล้วใช้ Web Share API ถ้าเบราว์เซอร์รองรับ (ส่วนใหญ่คือมือถือ) — เปิดหน้าต่างแชร์ของระบบ
+// ให้เลือกแอปอีเมลได้เลยพร้อมไฟล์แนบทั้ง 2 ไฟล์ ถ้าไม่รองรับ (เช่นคอมพิวเตอร์ส่วนใหญ่) จะดาวน์โหลด
+// ทั้ง 2 ไฟล์ให้แทน แล้วเปิด mailto: ดราฟต์อีเมลเตือนให้แนบไฟล์เอง (เบราว์เซอร์ทั่วไปไม่อนุญาตให้
+// แนบไฟล์อัตโนมัติผ่าน mailto:)
 async function handleShareEmail(){
   await withBusyButton('btnHistEmail', 'กำลังเตรียมไฟล์...', async () => {
     const docPdf = await generateReportPdf();
     if(!docPdf) return;
-    const filename = `ตรวจเวรวันหยุด_รายงาน_${state.date}.pdf`;
-    const blob = docPdf.output('blob');
+    const excelBuf = await generateHistoryExcel();
+
+    const pdfFilename = `ตรวจเวรวันหยุด_รายงาน_${state.date}.pdf`;
+    const excelFilename = `ตรวจเวรวันหยุด_${state.date}.xlsx`;
+    const pdfBlob = docPdf.output('blob');
+    const excelBlob = excelBuf ? new Blob([excelBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }) : null;
+
     let shared = false;
     if(navigator.canShare && window.File){
       try{
-        const file = new File([blob], filename, { type:'application/pdf' });
-        if(navigator.canShare({ files:[file] })){
-          await navigator.share({ files:[file], title:'รายงานตรวจเวรวันหยุด', text:'รายงานสรุปผลตรวจเวรวันหยุด' });
+        const files = [new File([pdfBlob], pdfFilename, { type:'application/pdf' })];
+        if(excelBlob) files.push(new File([excelBlob], excelFilename, { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+        if(navigator.canShare({ files })){
+          await navigator.share({ files, title:'รายงานตรวจเวรวันหยุด', text:'รายงานสรุปผลตรวจเวรวันหยุด (PDF + Excel)' });
           shared = true;
           showToast('เปิดหน้าต่างแชร์แล้ว เลือกแอปอีเมลที่ต้องการส่งได้เลย', 'success');
         }
@@ -2179,11 +2299,13 @@ async function handleShareEmail(){
       }
     }
     if(!shared){
-      downloadBlob(blob, filename);
+      downloadBlob(pdfBlob, pdfFilename);
+      if(excelBlob) downloadBlob(excelBlob, excelFilename);
+      const fileList = excelBlob ? `"${pdfFilename}" และ "${excelFilename}"` : `"${pdfFilename}"`;
       const subject = encodeURIComponent('รายงานตรวจเวรวันหยุด ' + state.date);
-      const body = encodeURIComponent('ไฟล์ PDF ถูกดาวน์โหลดไว้แล้วชื่อ "' + filename + '" — กรุณาแนบไฟล์นี้ก่อนกดส่งด้วยนะครับ/ค่ะ (เบราว์เซอร์ไม่รองรับการแนบไฟล์ให้อัตโนมัติ)');
+      const body = encodeURIComponent(`ไฟล์ถูกดาวน์โหลดไว้แล้ว ${fileList} — กรุณาแนบไฟล์ทั้งหมดนี้ก่อนกดส่งด้วยนะครับ/ค่ะ (เบราว์เซอร์ไม่รองรับการแนบไฟล์ให้อัตโนมัติ)`);
       window.location.href = `mailto:?subject=${subject}&body=${body}`;
-      showToast('ดาวน์โหลด PDF แล้ว กรุณาแนบไฟล์ในหน้าต่างอีเมลที่เปิดขึ้นด้วยตนเอง', 'success');
+      showToast('ดาวน์โหลดไฟล์แล้ว กรุณาแนบไฟล์ในหน้าต่างอีเมลที่เปิดขึ้นด้วยตนเอง', 'success');
     }
   }, 'ดำเนินการไม่สำเร็จ');
 }
@@ -2220,13 +2342,12 @@ function renderSettingsList(wrapId, items, { emptyText, getLine1, getLine2, getK
 }
 
 /* ---- ผู้ตรวจ (Members) ---- */
-// วาดรายชื่อผู้ตรวจในหน้าตั้งค่า เรียงตามแผนกแล้วชื่อ
+// วาดรายชื่อผู้ตรวจในหน้าตั้งค่า เรียงตามชื่อ (ไม่มีแผนกแล้ว)
 function renderMemberSettings(){
-  const sorted = [...DBX.members].sort((a,b) => (a.department||'').localeCompare(b.department||'') || a.name.localeCompare(b.name));
+  const sorted = [...DBX.members].sort((a,b) => a.name.localeCompare(b.name));
   renderSettingsList('memberList', sorted, {
     emptyText: 'ยังไม่มีรายชื่อผู้ตรวจ',
     getLine1: m => m.name,
-    getLine2: m => m.department || '-',
     getKey: m => m.id,
     confirmMsg: 'ลบผู้ตรวจคนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
     onConfirmDelete: (id) => { DBX.members = DBX.members.filter(m => m.id !== id); refreshMembers(); },
@@ -2235,11 +2356,9 @@ function renderMemberSettings(){
 // เพิ่มผู้ตรวจชั่วคราว (แค่เครื่องนี้ หายเมื่อรีเฟรช) จากฟอร์มในหน้าตั้งค่า
 function addMember(){
   const name = document.getElementById('newMemberName').value.trim();
-  const dept = document.getElementById('newMemberDept').value.trim();
-  if(!name || !dept){ showToast('กรุณากรอกชื่อและแผนกให้ครบ', 'error'); return; }
-  DBX.members.push({ id: uid(), name, department: dept });
+  if(!name){ showToast('กรุณากรอกชื่อ', 'error'); return; }
+  DBX.members.push({ id: uid(), name });
   document.getElementById('newMemberName').value = '';
-  document.getElementById('newMemberDept').value = '';
   showToast('เพิ่มผู้ตรวจแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
   refreshMembers();
 }
@@ -2335,11 +2454,6 @@ function wireEvents(){
     () => DBX.members.map(m => m.name)
   );
   setupAutocomplete(
-    document.getElementById('newMemberDept'),
-    document.getElementById('deptAutoList'),
-    () => distinctDepartments()
-  );
-  setupAutocomplete(
     document.getElementById('newAreaLocation'),
     document.getElementById('locAutoList'),
     () => distinctLocations()
@@ -2353,7 +2467,6 @@ function wireEvents(){
     if(!state.inspectorName || !state.date){ showToast('กรุณากรอกชื่อผู้ตรวจและวันที่', 'error'); return; }
     const matched = DBX.members.find(m => m.name === state.inspectorName);
     if(!matched){ showToast('ไม่พบชื่อนี้ในรายชื่อผู้ตรวจ กรุณาเลือกจากรายการค้นหา', 'error'); return; }
-    state.department = matched.department || '';
     document.getElementById('viewStart').classList.add('hidden');
     document.getElementById('viewLocations').classList.remove('hidden');
     renderLocationsGrid();
@@ -2388,6 +2501,13 @@ function wireEvents(){
     p.addEventListener('click', () => {
       document.getElementById('pillWorker').querySelectorAll('.pill').forEach(x => x.classList.remove('selected'));
       p.classList.add('selected');
+    });
+  });
+  document.getElementById('pillAccidentImpact').querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      document.getElementById('pillAccidentImpact').querySelectorAll('.pill').forEach(x => x.classList.remove('selected'));
+      p.classList.add('selected');
+      document.getElementById('accImpactOtherField').classList.toggle('hidden', p.dataset.value !== 'อื่นๆ');
     });
   });
   document.getElementById('filePhotos').addEventListener('change', (e) => {
