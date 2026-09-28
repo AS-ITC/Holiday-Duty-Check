@@ -378,13 +378,13 @@ window.MASTER_DATA = {
     "id": "a32",
     "location": "Zone7",
     "zone": "ทางเดินเข้าไลน์ผลิต",
-    "order": 1
+    "order": 0
   },
   {
     "id": "a33",
     "location": "Zone7",
     "zone": "พื้นที่อื่นๆ เช่น ห้องน้ำพนักงาน / ทางเดินลูกค้า / ห้องน้ำลูกค้า /Meeting Room / Office Fa",
-    "order": 2
+    "order": 1
   },
   {
     "id": "a34",
