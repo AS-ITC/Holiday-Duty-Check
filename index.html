@@ -166,6 +166,13 @@ input,select,textarea{font-family:inherit;}
   width:100%;padding:12px 16px;border-radius:var(--radius-pill);border:1.5px solid var(--border);
   font-size:15px;background:#fff;color:var(--text);
 }
+/* input[type=date] บน iOS Safari: ค่า default -webkit-appearance ทำให้ตัวควบคุมวันที่
+   ไม่ยอมทำตาม width/padding/box-sizing ที่กำหนด แสดงผลกว้างล้นกรอบ .field/.card ออกไป
+   (เกิดเฉพาะ Safari, Chrome/Android ไม่เป็น) — reset appearance ให้เป็นกล่องปกติเหมือน input อื่น ๆ
+   ยังกดเปิดปฏิทินของเครื่องได้ตามปกติ แค่ไม่ใช้สไตล์ native ของ Safari */
+.field input[type=date]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%;
+}
 .field textarea{
   width:100%;padding:12px 16px;border-radius:var(--radius-md);border:1.5px solid var(--border);
   font-size:15px;background:#fff;color:var(--text);resize:vertical;min-height:80px;
@@ -1250,6 +1257,9 @@ function idbClearRecords(){
    ====================================================================== */
 const DBX = { members: [], areas: [], zoneGroups: [], issueTypes: [], orgList: [], records: [] };
 const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟเสีย','GMP','อื่นๆ'];
+// key ที่ใช้เก็บชื่อผู้ตรวจล่าสุดใน localStorage เพื่อจำไว้ขึ้นเป็นค่าเริ่มต้นให้เองครั้งถัดไป
+// (คนละส่วนกับ state ด้านล่าง ซึ่งตั้งใจให้รีเซ็ตทุกครั้งที่รีเฟรชหน้า — เก็บแยกไว้ต่างหาก)
+const LS_LAST_INSPECTOR = 'dutyCheck_lastInspectorName';
 const state = {
   date: todayStr(),
   inspectorName: '',
@@ -1416,6 +1426,17 @@ function renderInspectorOptions(){
   const members = DBX.members;
   ddIns.placeholder = members.length ? 'พิมพ์ค้นหาชื่อของคุณ...' : 'ยังไม่มีรายชื่อผู้ตรวจ ไปเพิ่มที่ตั้งค่า';
   if(!members.some(m => m.name === ddIns.value)) ddIns.value = '';
+}
+// ใส่ชื่อผู้ตรวจล่าสุดที่เคยกด "เริ่มตรวจเช็คตามลำดับ" สำเร็จไว้ (จำใน localStorage ของเครื่อง/เบราว์เซอร์นี้)
+// ให้ขึ้นเป็นค่าเริ่มต้นในช่องชื่ออัตโนมัติ — เรียกครั้งเดียวตอนเปิดแอปเสร็จ (หลัง renderStartScreen)
+// ไม่ทับค่าที่มีอยู่แล้ว (เผื่อผู้ใช้พิมพ์ไว้ก่อนโหลดเสร็จ) และเช็คว่าชื่อนั้นยังอยู่ในรายชื่อจริงก่อนใส่ให้
+function applyLastInspectorDefault(){
+  if(state.inspectorName) return;
+  let saved = '';
+  try{ saved = localStorage.getItem(LS_LAST_INSPECTOR) || ''; }catch(e){}
+  if(!saved || !DBX.members.some(m => m.name === saved)) return;
+  state.inspectorName = saved;
+  document.getElementById('ddInspector').value = saved;
 }
 
 /* ======================================================================
@@ -2489,6 +2510,7 @@ function wireEvents(){
     if(!state.inspectorName || !state.date){ showToast('กรุณากรอกชื่อผู้ตรวจและวันที่', 'error'); return; }
     const matched = DBX.members.find(m => m.name === state.inspectorName);
     if(!matched){ showToast('ไม่พบชื่อนี้ในรายชื่อผู้ตรวจ กรุณาเลือกจากรายการค้นหา', 'error'); return; }
+    try{ localStorage.setItem(LS_LAST_INSPECTOR, state.inspectorName); }catch(e){}
     document.getElementById('viewStart').classList.add('hidden');
     document.getElementById('viewLocations').classList.remove('hidden');
     renderLocationsGrid();
@@ -2567,6 +2589,7 @@ wireEvents();
 document.getElementById('dpDate').value = state.date;
 loadAll().then(() => {
   renderStartScreen();
+  applyLastInspectorDefault();
   renderLocationsGrid();
   renderMemberSettings();
   renderAreaSettings();
