@@ -1411,6 +1411,14 @@ function locationStatus(loc){
   if(totalZones > 0 && checkedZones >= totalZones) return { state:'done', totalZones, checkedZones };
   return { state:'progress', totalZones, checkedZones };
 }
+// เช็คว่าทุกโซน (Zone1..Zone13 ฯลฯ) ตรวจครบแล้วหรือยัง สำหรับวันที่กำลังตรวจอยู่ (state.date) —
+// ใช้ locationStatus() ตัวเดียวกับที่วาดสีการ์ดโซนในหน้าพื้นที่ตรวจ เพื่อให้เกณฑ์ตรงกันเป๊ะ
+// ใช้เช็คก่อนอนุญาตให้กดปุ่ม "ส่ง PDF + Excel ทางอีเมล" — บังคับให้ตรวจครบทุกโซนก่อนส่งรายงาน
+// return: { complete: boolean, incompleteLocs: string[] } — incompleteLocs คือโซนที่ยังไม่ครบ (รอตรวจ/กำลังตรวจ)
+function allZonesCompleted(){
+  const incompleteLocs = distinctLocations().filter(loc => locationStatus(loc).state !== 'done');
+  return { complete: incompleteLocs.length === 0, incompleteLocs };
+}
 
 /* ======================================================================
    ZONE: RENDER - หน้าเริ่มตรวจ (เลือกชื่อผู้ตรวจ/วันที่)
@@ -2315,7 +2323,14 @@ async function handleExportExcel(){
 // ให้เลือกแอปอีเมลได้เลยพร้อมไฟล์แนบทั้ง 2 ไฟล์ ถ้าไม่รองรับ (เช่นคอมพิวเตอร์ส่วนใหญ่) จะดาวน์โหลด
 // ทั้ง 2 ไฟล์ให้แทน แล้วเปิด mailto: ดราฟต์อีเมลเตือนให้แนบไฟล์เอง (เบราว์เซอร์ทั่วไปไม่อนุญาตให้
 // แนบไฟล์อัตโนมัติผ่าน mailto:)
+// ก่อนเริ่มสร้างไฟล์ ต้องตรวจครบทุกโซนของวันที่กำลังตรวจ (state.date) ก่อน — ถ้ายังไม่ครบ
+// บล็อกไว้ทันที ไม่ให้กดส่งอีเมลได้ (กันรายงานที่ตรวจไม่ครบหลุดออกไป)
 async function handleShareEmail(){
+  const zoneCheck = allZonesCompleted();
+  if(!zoneCheck.complete){
+    showToast(`ตรวจยังไม่ครบทุกโซน (เหลือ ${zoneCheck.incompleteLocs.join(', ')}) กรุณาตรวจให้ครบก่อนส่งอีเมล`, 'error');
+    return;
+  }
   await withBusyButton('btnHistEmail', 'กำลังเตรียมไฟล์...', async () => {
     const docPdf = await generateReportPdf();
     if(!docPdf) return;
