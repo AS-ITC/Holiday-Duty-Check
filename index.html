@@ -217,6 +217,7 @@ input,select,textarea{font-family:inherit;}
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   border:none;border-radius:var(--radius-pill);padding:14px 18px;font-size:16px;font-weight:700;
   color:#fff;background:var(--brand-light);width:100%;
+  text-decoration:none;
 }
 .btn:active{transform:scale(0.99);}
 .btn:disabled{opacity:0.6;}
@@ -229,6 +230,15 @@ input,select,textarea{font-family:inherit;}
 .btn.danger{background:var(--danger);}
 .btn.small{width:auto;padding:8px 14px;font-size:13px;border-radius:var(--radius-pill);}
 .btn.ghost{background:transparent;color:var(--teal-700);border:1.5px solid var(--teal-700);}
+/* สวิตช์เปิด/ปิดแบบ toggle (ใช้กับ "โหมดทดสอบ" ในหน้าตั้งค่า) */
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;position:absolute;}
+.switch .slider{position:absolute;inset:0;background:var(--border);border-radius:var(--radius-pill);cursor:pointer;transition:background .15s;}
+.switch .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.switch input:checked+.slider{background:var(--coral-500);}
+.switch input:checked+.slider::before{transform:translateX(20px);}
+.test-mode-warning{font-size:12px;color:var(--amber-500);background:var(--amber-100);border-radius:var(--radius-sm);padding:8px 12px;margin-top:8px;}
 
 .banner{
   border-radius:var(--radius-lg);padding:12px 14px;font-size:13px;margin-bottom:14px;
@@ -392,6 +402,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
             <input type="date" id="dpDate">
           </div>
           <button class="btn primary" id="btnNext">เริ่มตรวจเช็คตามลำดับ →</button>
+          <!-- ลิงก์เปิดไฟล์ PDF อ้างอิงแผนผังจุดตรวจ ITC — วางไฟล์ "จุดตรวจพื้นที่-ITC.pdf" ไว้ในโฟลเดอร์
+               เดียวกับ index.html เสมอ (ทั้งบน GitHub Pages และถ้าแจกเป็นไฟล์ออฟไลน์ก็ต้องส่งคู่กัน)
+               เพราะใช้ path แบบ relative ไม่ได้ฝังไฟล์ไว้ในตัว index.html เพื่อไม่ให้ไฟล์ใหญ่ขึ้นมาก -->
+          <a class="btn ghost" href="./จุดตรวจพื้นที่-ITC.pdf" target="_blank" rel="noopener" style="margin-top:10px;">📄 ดูแผนผังจุดตรวจ ITC (PDF)</a>
         </div>
       </div>
 
@@ -439,6 +453,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <button class="btn secondary" id="btnHistPdf">📄 ออกรายงาน PDF</button>
           <button class="btn primary" id="btnHistEmail">📧 ส่ง PDF + Excel ทางอีเมล</button>
         </div>
+        <p id="testModeWarning" class="test-mode-warning hidden">🧪 โหมดทดสอบเปิดอยู่ — ปุ่มส่งอีเมลจะข้ามการเช็คตรวจครบทุกโซน (ปิดได้ที่ ⚙️ ตั้งค่า → ข้อมูล)</p>
       </div>
       <div class="table-wrap">
         <table id="histTable">
@@ -683,6 +698,18 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <b>ลบผลตรวจทั้งหมดในเครื่องนี้</b>
           <p style="font-size:12px;color:var(--text-soft);">ลบผลตรวจ/รูปทั้งหมดที่บันทึกไว้ในเครื่องนี้ทิ้งถาวร (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) ใช้เมื่อต้องการเริ่มใหม่เท่านั้น</p>
           <button class="btn ghost" id="btnClearData" style="color:var(--danger);">🗑 ลบผลตรวจทั้งหมด</button>
+        </div>
+        <div class="card" style="border:1.5px solid var(--amber-500);background:var(--amber-100);">
+          <div class="switch-row">
+            <div>
+              <b>โหมดทดสอบ: ข้ามเช็คตรวจครบทุกโซน</b>
+              <p style="font-size:12px;color:var(--text-soft);margin:4px 0 0;">เปิดไว้จะกดปุ่ม "ส่ง PDF + Excel ทางอีเมล" ได้ทันที แม้ตรวจยังไม่ครบทุกโซน — ใช้ตอนทดสอบโปรแกรมเท่านั้น ต้องใส่รหัสผ่านตอนเปิด ลืมปิดแล้วอาจส่งรายงานที่ตรวจไม่ครบออกไปโดยไม่ได้ตั้งใจ</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggleTestMode">
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -1263,6 +1290,23 @@ const DEFAULT_ISSUE_TYPES = ['ลมรั่ว','ปิดน้ำ','ไฟ�
 // key ที่ใช้เก็บชื่อผู้ตรวจล่าสุดใน localStorage เพื่อจำไว้ขึ้นเป็นค่าเริ่มต้นให้เองครั้งถัดไป
 // (คนละส่วนกับ state ด้านล่าง ซึ่งตั้งใจให้รีเซ็ตทุกครั้งที่รีเฟรชหน้า — เก็บแยกไว้ต่างหาก)
 const LS_LAST_INSPECTOR = 'dutyCheck_lastInspectorName';
+// key เก็บสถานะ "โหมดทดสอบ" (ข้ามเช็คตรวจครบทุกโซนตอนกดส่งอีเมล) ไว้ใน localStorage ของเครื่องนี้
+// เปิดได้ต้องใส่รหัสผ่านก่อน (ดูใน wireEvents ตรง toggleTestMode) ไว้ใช้ตอนทดสอบโปรแกรมเท่านั้น
+// ไม่เกี่ยวกับ data.js หรือผลตรวจจริง — ปิดเครื่อง/ล้างเบราว์เซอร์แล้วจะกลับไปปิดเป็นค่าเริ่มต้นเอง
+const LS_TEST_MODE = 'dutyCheck_testModeSkipZoneGate';
+const TEST_MODE_PASSWORD = 'admin123';
+function isTestModeActive(){
+  try{ return localStorage.getItem(LS_TEST_MODE) === '1'; }catch(e){ return false; }
+}
+// ซิงก์สวิตช์ในหน้าตั้งค่า + แถบเตือนสีเหลืองใต้ปุ่มส่งอีเมล ให้ตรงกับสถานะจริงใน localStorage
+// เรียกตอนเปิดแอปเสร็จ และทุกครั้งที่ toggle เปลี่ยน
+function applyTestModeUI(){
+  const active = isTestModeActive();
+  const toggle = document.getElementById('toggleTestMode');
+  if(toggle) toggle.checked = active;
+  const warn = document.getElementById('testModeWarning');
+  if(warn) warn.classList.toggle('hidden', !active);
+}
 const state = {
   date: todayStr(),
   inspectorName: '',
@@ -2328,9 +2372,10 @@ async function handleExportExcel(){
 // แนบไฟล์อัตโนมัติผ่าน mailto:)
 // ก่อนเริ่มสร้างไฟล์ ต้องตรวจครบทุกโซนของวันที่กำลังตรวจ (state.date) ก่อน — ถ้ายังไม่ครบ
 // บล็อกไว้ทันที ไม่ให้กดส่งอีเมลได้ (กันรายงานที่ตรวจไม่ครบหลุดออกไป)
+// ยกเว้นตอนเปิด "โหมดทดสอบ" ไว้ (ตั้งค่า → ข้อมูล → ต้องใส่รหัสผ่านตอนเปิด) จะข้ามการเช็คนี้ไปเลย
 async function handleShareEmail(){
   const zoneCheck = allZonesCompleted();
-  if(!zoneCheck.complete){
+  if(!zoneCheck.complete && !isTestModeActive()){
     // แสดงชื่อโซนที่ยังไม่ครบสูงสุด 5 โซนแรกพอ (ไม่งั้นถ้าเพิ่งเริ่มเวรจะไม่ครบเกือบทุกโซน
     // ข้อความจะยาวมากจนอ่านยาก) ที่เหลือสรุปเป็นตัวเลขแทน
     const MAX_SHOW = 5;
@@ -2558,6 +2603,27 @@ function wireEvents(){
   document.getElementById('btnExportJson').addEventListener('click', exportBackupJson);
   document.getElementById('btnClearData').addEventListener('click', clearAllData);
 
+  // สวิตช์ "โหมดทดสอบ" — เปิดต้องใส่รหัสผ่าน admin123 ก่อน (ใช้ prompt() ธรรมดา เพราะเป็นฟีเจอร์
+  // สำหรับทดสอบโปรแกรมเท่านั้น ไม่ใช่ระบบความปลอดภัยจริงจัง) ปิดกลับคืนทำได้ทันทีไม่ต้องใส่รหัส
+  document.getElementById('toggleTestMode').addEventListener('change', (e) => {
+    const wantOn = e.target.checked;
+    if(wantOn){
+      const pw = prompt('ใส่รหัสผ่าน Admin เพื่อเปิดโหมดทดสอบ:');
+      if(pw === null){ e.target.checked = false; return; } // กดยกเลิก — เงียบๆ ไม่ต้องแจ้งเตือน
+      if(pw !== TEST_MODE_PASSWORD){
+        e.target.checked = false;
+        showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+        return;
+      }
+      try{ localStorage.setItem(LS_TEST_MODE, '1'); }catch(err){}
+      showToast('เปิดโหมดทดสอบแล้ว — ปุ่มส่งอีเมลจะข้ามเช็คตรวจครบโซน', 'success');
+    }else{
+      try{ localStorage.removeItem(LS_TEST_MODE); }catch(err){}
+      showToast('ปิดโหมดทดสอบแล้ว', 'success');
+    }
+    applyTestModeUI();
+  });
+
   document.getElementById('pillStatus').querySelectorAll('.pill').forEach(p => {
     p.addEventListener('click', () => {
       document.getElementById('pillStatus').querySelectorAll('.pill').forEach(x => x.classList.remove('selected'));
@@ -2611,6 +2677,7 @@ function wireEvents(){
    ====================================================================== */
 wireEvents();
 document.getElementById('dpDate').value = state.date;
+applyTestModeUI();
 loadAll().then(() => {
   renderStartScreen();
   applyLastInspectorDefault();
