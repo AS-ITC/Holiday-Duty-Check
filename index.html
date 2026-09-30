@@ -1450,19 +1450,34 @@ function initCloudAuth(){
 // ส่ง record ขึ้น Firestore (ใช้ id เดียวกับที่เก็บใน IndexedDB) — เรียกคู่กับ idbPut เสมอ
 // แยก photos ออกไปเก็บเป็นเอกสารย่อยทีละรูปใน subcollection แทนที่จะฝังในฟิลด์เดียว
 // เจตนาไม่ await ตอนเรียกจากจุดบันทึกฟอร์ม เพื่อไม่ให้ผู้ใช้ต้องรอเน็ตก่อนเห็นผลบันทึกสำเร็จ
+//
+// ลำดับการเขียนสำคัญมาก ห้ามสลับ: ต้องเขียน subcollection "photos" ให้เสร็จก่อน แล้วค่อยเขียน
+// เอกสารหลัก (records/{id}) ทีหลังเสมอ — เพราะ startCloudSync() ฟัง onSnapshot บน
+// collection('records') (เอกสารหลัก) เท่านั้น ไม่ได้ฟัง subcollection รูปเลย ถ้าเขียนเอกสารหลัก
+// (ที่มี photoCount ตั้งไว้แล้ว) ก่อน จะไปกระตุ้น onSnapshot ทันที ทำให้ cloudHydratePhotos() ของ
+// เครื่องที่กำลังฟังอยู่ (รวมถึงเครื่องนี้เองตอนรับ echo กลับมา) ไปอ่าน subcollection รูปที่ยังเขียน
+// ไม่เสร็จ ได้ photos: [] ว่างเปล่ากลับมา แล้วเอาไปทับข้อมูลที่ถูกต้องใน IndexedDB ของเครื่องนี้เอง
+// (บั๊กที่เจอจริง: ถ่ายรูปแนบแล้วกดบันทึก พอไปดูหน้าประวัติ/เปิดแก้ไขใหม่ รูปหายไปเฉยๆ ต้องถ่าย
+// ใหม่แล้วบันทึกซ้ำถึงจะติด — เพราะจังหวะรอบสองพอดีกับที่ subcollection เขียนเสร็จทันเวลา)
+// นอกจากนี้ยังลบรูปเก่าที่เกินออกด้วย ถ้าแก้ไขแล้วรูปน้อยลงกว่าตอนบันทึกครั้งก่อน (เช็คจาก
+// subcollection จริงใน Firestore ไม่เดาจาก record ในเครื่องนี้ เพราะเครื่องนี้ไม่รู้ว่า Firestore
+// เคยมีกี่รูปมาก่อนหน้า)
 async function cloudPushRecord(record){
   if(!cloudReady || !fbDb || !fsApi) return; // ยังไม่ signed-in หรือไม่มี Firebase เลย (เน็ตช้า/หลุด/ถูกบล็อก) ข้ามไปก่อน ไม่บล็อกผู้ใช้
   try{
     const { photos, ...fields } = record;
-    fields.photoCount = (photos || []).length;
+    const newPhotos = photos || [];
+    fields.photoCount = newPhotos.length;
+
+    const batch = fsApi.writeBatch(fbDb);
+    newPhotos.forEach((dataUrl, i) => {
+      batch.set(fsApi.doc(fbDb, 'records', record.id, 'photos', String(i)), { dataUrl, order: i });
+    });
+    const existingPhotosSnap = await fsApi.getDocs(fsApi.collection(fbDb, 'records', record.id, 'photos'));
+    existingPhotosSnap.forEach(d => { if(Number(d.id) >= newPhotos.length) batch.delete(d.ref); });
+    if(newPhotos.length || !existingPhotosSnap.empty) await batch.commit();
+
     await fsApi.setDoc(fsApi.doc(fbDb, 'records', record.id), fields);
-    if(photos && photos.length){
-      const batch = fsApi.writeBatch(fbDb);
-      photos.forEach((dataUrl, i) => {
-        batch.set(fsApi.doc(fbDb, 'records', record.id, 'photos', String(i)), { dataUrl, order: i });
-      });
-      await batch.commit();
-    }
   }catch(err){
     console.error('ส่งข้อมูลขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
     // ไม่โชว์ toast รบกวนผู้ใช้ — ข้อมูลยังปลอดภัยอยู่ใน IndexedDB เครื่องนี้แล้ว (ถ้าเป็นเพราะ
