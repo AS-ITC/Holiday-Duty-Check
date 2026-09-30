@@ -438,9 +438,15 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
         </div>
         <div class="row">
           <div class="field">
+            <label>ผู้ตรวจ</label>
+            <select id="histInspector"><option value="">ทั้งหมด</option></select>
+          </div>
+          <div class="field">
             <label>พื้นที่</label>
             <select id="histLocation"><option value="">ทั้งหมด</option></select>
           </div>
+        </div>
+        <div class="row">
           <div class="field">
             <label>สถานะ</label>
             <select id="histStatus">
@@ -700,6 +706,11 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <button class="btn secondary" id="btnExportJson">⬇ ส่งออกไฟล์สำรองผลตรวจ</button>
         </div>
         <div class="card">
+          <b>ส่งออกฐานข้อมูลทั้งหมด (Excel)</b>
+          <p style="font-size:12px;color:var(--text-soft);">ส่งออกผลตรวจ<b>ทุกรายการในฐานข้อมูลกลาง</b>เป็นไฟล์ .xlsx (ไม่กรองตามช่วงวันที่/ผู้ตรวจ/พื้นที่เหมือนหน้าประวัติ — เอาทั้งหมดที่มีในเครื่องนี้ ณ ตอนกด รวมรูปแนบด้วย) เหมาะกับงานสรุป/ตรวจสอบย้อนหลังทั้งหมด</p>
+          <button class="btn secondary" id="btnExportAllExcel">⬇ ส่งออกฐานข้อมูลทั้งหมด</button>
+        </div>
+        <div class="card">
           <b>ล้างแคชผลตรวจในเครื่องนี้</b>
           <p style="font-size:12px;color:var(--text-soft);">ล้างผลตรวจ/รูปที่แคชไว้ในเครื่องนี้ (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) — ถ้าเครื่องนี้เชื่อมฐานข้อมูลกลางอยู่ ข้อมูลจะถูกดึงกลับมาใหม่อัตโนมัติตอนเปิดแอปครั้งถัดไป (ไม่ได้ลบทิ้งถาวร)</p>
           <button class="btn ghost" id="btnClearData" style="color:var(--danger);">🗑 ล้างแคชผลตรวจ</button>
@@ -715,6 +726,11 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
               <span class="slider"></span>
             </label>
           </div>
+        </div>
+        <div class="card" style="border:1.5px solid var(--danger);background:var(--danger-bg);">
+          <b style="color:var(--danger);">⚠️ ลบข้อมูลในฐานข้อมูลกลางทั้งหมด</b>
+          <p style="font-size:12px;color:var(--text-soft);margin:4px 0 10px;">ลบ<b>ผลตรวจทุกรายการของทุกคนทุกเครื่อง</b>ออกจากฐานข้อมูลกลาง (Firestore) แบบถาวร — <b>ต่างจากปุ่ม "ล้างแคชผลตรวจ" ด้านบน</b> ที่ล้างแค่เครื่องนี้เครื่องเดียวและข้อมูลยังดึงกลับมาได้ ปุ่มนี้ลบจริง กู้คืนไม่ได้ ต้องใส่รหัสผ่านก่อนทุกครั้ง ใช้เมื่อต้องการล้างข้อมูลทดสอบ/เริ่มต้นฐานข้อมูลใหม่เท่านั้น</p>
+          <button class="btn danger" id="btnClearCentralDb">🗑⚠️ ลบข้อมูลในฐานข้อมูลกลางทั้งหมด</button>
         </div>
       </div>
     </div>
@@ -1544,6 +1560,11 @@ async function cloudPushMasterData(){
     });
   }catch(err){
     console.error('ส่งรายชื่อ/พื้นที่ส่วนกลางขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
+    // ต่างจาก cloudPushRecord ที่เงียบไว้ได้ (records มีคิวออฟไลน์ของ Firestore SDK คอยส่งซ้ำให้เอง) —
+    // master data เป็นการแก้ที่ตั้งใจ/ไม่บ่อย และถ้า push ไม่สำเร็จ (เช่น Security Rules ในคอนโซลยังไม่ครอบคลุม
+    // config/masterData) หน้าจอเครื่องนี้จะยังเห็นข้อมูลที่เพิ่งแก้ไปก่อน แต่รอบถัดไปที่ฟัง cloud sync จะดึง
+    // ข้อมูลเก่าจากฐานข้อมูลกลางมาทับคืน (ดูเหมือนข้อมูลหายไปเฉย ๆ ถ้าไม่บอกผู้ใช้ตรงนี้) จึงต้องโชว์ toast ทันที
+    showToast('ซิงค์ขึ้นฐานข้อมูลกลางไม่สำเร็จ (' + (err && err.code ? err.code : err.message) + ') — ข้อมูลอาจไม่ถูกบันทึกถาวร ลองเช็ค Security Rules ในหน้า Firebase Console', 'error');
   }
 }
 
@@ -1556,27 +1577,37 @@ function pushMasterDataAfterEdit(){
 
 // เริ่มฟัง Firestore แบบ real-time สำหรับ master data — พอมีใครแก้รายชื่อ/พื้นที่/ประเภทปัญหา
 // จากเครื่องไหนก็ตาม (รวมเครื่องนี้เองด้วย) จะไหลมาที่นี่แล้วอัปเดต DBX + cache + หน้าจอให้ตรงกัน
-// เรียกครั้งเดียวตอน INIT หลัง sign-in สำเร็จ (ดู ZONE: INIT ท้ายไฟล์) — ใช้ collection('config')
-// แทนการฟังเอกสารเดี่ยวตรง ๆ เพื่อใช้กลไก onSnapshot ชุดเดียวกับ records (รองรับ document
-// เดียวในคอลเลกชันนี้ก็เพียงพอ ไม่ต้องเพิ่ม API ใหม่)
+// เรียกครั้งเดียวตอน INIT หลัง sign-in สำเร็จ (ดู ZONE: INIT ท้ายไฟล์)
+// สำคัญ: ต้องฟัง "เอกสารเดี่ยว" (onSnapshot(doc(...))) ตรง ๆ ไม่ใช่ฟังทั้ง collection('config')
+// แบบที่เคยทำ (เหมือน records) — เพราะ Security Rules ของ config/masterData เป็น rule เฉพาะ
+// เอกสารนี้เอกสารเดียว (ไม่ใช่ wildcard แบบ /records/{recordId}) Firestore จะ "ปฏิเสธ list query
+// ทั้ง collection เสมอ" (permission-denied) แม้ตัวเอกสารเองจะอ่าน/เขียนตรง ๆ ได้ปกติก็ตาม — นี่คือ
+// สาเหตุจริงที่แก้รายชื่อ/พื้นที่แล้ว sync "ดูเหมือน" ทำงาน (setDoc ตรง ๆ ผ่านได้) แต่ real-time
+// listener (ที่เคยฟัง collection) กลับ error เงียบ ๆ ตลอด ทำให้ไม่มีเครื่องไหนเคยเห็นการแก้ไข
+// ข้ามเครื่องได้เลยตั้งแต่แรก (คนละสาเหตุกับ Security Rules เก่า/ใหม่)
 function startMasterDataCloudSync(){
   if(!fbDb || !fsApi) return; // ไม่มี Firebase SDK เลย ข้ามการ sync ไปทั้งหมด
-  fsApi.onSnapshot(fsApi.collection(fbDb, 'config'), (snap) => {
-    snap.docChanges().forEach(change => {
-      if(change.doc.id !== 'masterData' || change.type === 'removed') return;
-      const data = change.doc.data();
-      DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
-      DBX.areas = Array.isArray(data.areas) ? data.areas : [];
-      DBX.zoneGroups = Array.isArray(data.zoneGroups) ? data.zoneGroups : [];
-      DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
-      DBX.orgList = Array.isArray(data.orgList) ? data.orgList.slice() : [];
-      idbPutMasterDataCache({ members: DBX.members, areas: DBX.areas, zoneGroups: DBX.zoneGroups, issueTypes: DBX.issueTypes, orgList: DBX.orgList });
-      renderStartScreen(); renderMemberSettings(); renderAreaSettings();
-      renderIssueTypeOptions(); renderIssueTypeSettings(); refreshOrgList();
-      renderLocationsGrid(); renderHistoryFilters();
-    });
+  fsApi.onSnapshot(fsApi.doc(fbDb, 'config', 'masterData'), (docSnap) => {
+    if(!docSnap.exists()) return; // ยังไม่เคยมีข้อมูลในฐานข้อมูลกลางเลย (seedMasterDataToCloudIfEmpty จะจัดการ)
+    const data = docSnap.data();
+    DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
+    DBX.areas = Array.isArray(data.areas) ? data.areas : [];
+    DBX.zoneGroups = Array.isArray(data.zoneGroups) ? data.zoneGroups : [];
+    DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
+    DBX.orgList = Array.isArray(data.orgList) ? data.orgList.slice() : [];
+    idbPutMasterDataCache({ members: DBX.members, areas: DBX.areas, zoneGroups: DBX.zoneGroups, issueTypes: DBX.issueTypes, orgList: DBX.orgList });
+    renderStartScreen(); renderMemberSettings(); renderAreaSettings();
+    renderIssueTypeOptions(); renderIssueTypeSettings(); refreshOrgList();
+    renderLocationsGrid(); renderHistoryFilters();
   }, (err) => {
     console.error('ฟังการเปลี่ยนแปลงรายชื่อ/พื้นที่ส่วนกลางไม่สำเร็จ:', err);
+    // แจ้งผู้ใช้ครั้งเดียว (ไม่ใช่ทุกครั้งที่ error ซ้ำ) — ปกติเกิดจาก Security Rules ในคอนโซลยังไม่ครอบคลุม
+    // config/masterData (ดู README.md) ทำให้รายชื่อ/พื้นที่ที่แก้ในหน้าตั้งค่าไม่ sync ข้ามเครื่อง และอาจถูก
+    // ข้อมูลเก่าทับคืนตอนเปิดแอปใหม่ — ต้องรู้ทันทีแทนที่จะเงียบแล้วงงว่าทำไมข้อมูลหาย
+    if(!startMasterDataCloudSync._warned){
+      startMasterDataCloudSync._warned = true;
+      showToast('เชื่อมฟัง Firestore สำหรับรายชื่อ/พื้นที่ไม่สำเร็จ (' + (err && err.code ? err.code : err.message) + ') — เช็ค Security Rules ในหน้า Firebase Console', 'error');
+    }
   });
 }
 
@@ -1584,11 +1615,13 @@ function startMasterDataCloudSync(){
 // กำลังใช้อยู่ตอนนี้ (มาจาก data.js เพราะยังไม่เคย sync) ขึ้นไปตั้งต้นให้อัตโนมัติครั้งเดียว กัน
 // ต้องมานั่งพิมพ์รายชื่อ/พื้นที่ทั้งหมดใหม่ผ่านหน้าตั้งค่าเอง — เช็คจากฐานข้อมูลจริงทุกครั้ง (ไม่ใช้
 // localStorage flag เหมือน backfill ผลตรวจ) เพราะเป็นสถานะของฐานข้อมูลเอง ไม่ใช่ของเครื่องใดเครื่องหนึ่ง
+// ใช้ getDoc (เอกสารเดี่ยว) เหมือน startMasterDataCloudSync ด้านบน — ห้ามใช้ getDocs(collection(...))
+// เพราะเป็น list query ที่ Rules แบบ fixed-path นี้ปฏิเสธเสมอ (ดูคอมเมนต์ยาวด้านบน)
 async function seedMasterDataToCloudIfEmpty(){
   if(!fbDb || !fsApi) return;
   try{
-    const snap = await fsApi.getDocs(fsApi.collection(fbDb, 'config'));
-    const exists = snap.docs.some(d => d.id === 'masterData');
+    const snap = await fsApi.getDoc(fsApi.doc(fbDb, 'config', 'masterData'));
+    const exists = snap.exists();
     if(exists) return;
     await cloudPushMasterData();
   }catch(err){
@@ -2341,25 +2374,39 @@ async function submitEventLogForm(){
    ZONE: RENDER - ประวัติ / รายงาน — ทั้งหมดในโซนนี้อ่านจาก DBX.records
    (มาจาก IndexedDB) เท่านั้น ไม่มีข้อมูลจากที่อื่น
    ====================================================================== */
-// เติม dropdown "พื้นที่" ในตัวกรองประวัติ + ตั้งค่าเริ่มต้นของช่วงวันที่ถ้ายังว่างอยู่
+// เติม dropdown "ผู้ตรวจ"/"พื้นที่" ในตัวกรองประวัติ + ตั้งค่าเริ่มต้นของช่วงวันที่ถ้ายังว่างอยู่ —
+// แค่เติม option ใหม่แล้วคงค่าที่เลือกไว้เดิม (เหมือนพื้นที่) ไม่ยุ่งกับค่า default ของ "ผู้ตรวจ"
+// เพราะฟังก์ชันนี้ถูกเรียกบ่อยจากหลายที่ (INIT, หลังแก้รายชื่อ/พื้นที่ในหน้าตั้งค่า ฯลฯ) ไม่ใช่แค่
+// ตอนผู้ใช้เปิดแท็บประวัติจริง ๆ — การ default ชื่อจากหน้าแรกให้ครั้งแรกที่เปิดแท็บ อยู่ที่
+// switchMainTab('history') แทน (ดูด้านล่าง) กันไม่ให้ทับตัวกรองที่ผู้ใช้ตั้งเองไว้แล้วโดยไม่ตั้งใจ
 function renderHistoryFilters(){
   const loc = document.getElementById('histLocation');
-  const cur = loc.value;
+  const curLoc = loc.value;
   loc.innerHTML = `<option value="">ทั้งหมด</option>` + distinctLocations().map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
-  loc.value = cur;
+  loc.value = curLoc;
+
+  const ins = document.getElementById('histInspector');
+  const curIns = ins.value;
+  ins.innerHTML = `<option value="">ทั้งหมด</option>` + DBX.members.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+  ins.value = curIns;
+
   if(!document.getElementById('histFrom').value) document.getElementById('histFrom').value = state.date;
   if(!document.getElementById('histTo').value) document.getElementById('histTo').value = state.date;
 }
-// กรอง DBX.records ตามตัวกรองที่ตั้งไว้ในแท็บประวัติ (ช่วงวันที่/พื้นที่/สถานะ)
+// กรอง DBX.records ตามตัวกรองที่ตั้งไว้ในแท็บประวัติ (ช่วงวันที่/ผู้ตรวจ/พื้นที่/สถานะ)
 // ใช้ร่วมกันทั้งตารางประวัติ, ส่งออก Excel, และออกรายงาน PDF/อีเมล
 function filteredHistoryRecords(){
   const from = document.getElementById('histFrom').value;
   const to = document.getElementById('histTo').value;
+  const inspector = document.getElementById('histInspector').value;
   const loc = document.getElementById('histLocation').value;
   const status = document.getElementById('histStatus').value;
   return DBX.records.filter(r => {
     if(from && r.checkDate < from) return false;
     if(to && r.checkDate > to) return false;
+    // ตัวกรอง "ผู้ตรวจ" ใช้ได้กับ record ทุกประเภท (ทุกแบบมีฟิลด์ inspector เหมือนกันหมด
+    // เพราะเป็นชื่อคนที่กดเริ่มตรวจ/บันทึกรายการไว้ ไม่ใช่แค่ผลตรวจพื้นที่)
+    if(inspector && r.inspector !== inspector) return false;
     const type = r.recordType || 'inspection';
     // ตัวกรอง "พื้นที่" มีตัวเลือกมาจาก distinctLocations() (Zone1..Zone13) เท่านั้น ไม่มี
     // ตัวเลือกของ store/machine ปนอยู่ในนั้นเลย — ให้มีผลเฉพาะแถวตรวจพื้นที่ ส่วน store/machine
@@ -2455,9 +2502,11 @@ function renderHistoryTable(){
 // ทำงานได้ออฟไลน์ 100%) — แต่ละแถวคือ 1 ผลตรวจ มีคอลัมน์ "รูปที่ 1, 2, ..." ตามจำนวนรูป
 // สูงสุดที่พบ และฝังรูปจริงลงในเซลล์นั้น ๆ (ไม่ใช่แค่ตัวเลขจำนวนรูปเหมือนตารางในแอป)
 // return: Promise<ArrayBuffer> ของไฟล์ .xlsx หรือ null ถ้าไม่มีข้อมูลให้ส่งออก
-async function generateHistoryExcel(){
-  const rows = filteredHistoryRecords();
-  if(!rows.length){ showToast('ไม่มีข้อมูลในช่วงที่เลือกสำหรับส่งออก', 'error'); return null; }
+// rows: ถ้าไม่ส่งมา ใช้ตัวกรองในแท็บประวัติ (filteredHistoryRecords()) ตามเดิม — ส่ง DBX.records
+// ทั้งชุดเข้ามาตรง ๆ ได้ (ดู exportAllRecordsExcel ด้านล่าง) เพื่อ export ฐานข้อมูลทั้งหมดแบบไม่กรอง
+async function generateHistoryExcel(rows){
+  rows = rows || filteredHistoryRecords();
+  if(!rows.length){ showToast('ไม่มีข้อมูลสำหรับส่งออก', 'error'); return null; }
 
   const maxPhotos = rows.reduce((m, r) => Math.max(m, (r.photos || []).length), 0);
   // "ประเภท" คอลัมน์ใหม่ (ตรวจพื้นที่/เบิกของสโตร์/ขนย้ายเครื่องจักร) ส่วนคอลัมน์ที่เหลือใช้
@@ -2552,6 +2601,47 @@ async function clearAllData(){
     renderLocationsGrid(); renderHistoryTable();
     showToast('ล้างแคชผลตรวจในเครื่องนี้แล้ว', 'success');
   }catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+}
+// ลบผลตรวจ "ทุกรายการของทุกคนทุกเครื่อง" ออกจากฐานข้อมูลกลาง (Firestore) แบบถาวร — ต่างจาก
+// clearAllData() ด้านบนที่ล้างแค่แคชในเครื่องนี้เครื่องเดียว (ข้อมูลยังดึงกลับมาได้จากฐานข้อมูลกลาง)
+// ปุ่มนี้ลบของจริงในฐานข้อมูลกลาง กู้คืนไม่ได้ จึงถามรหัสผ่านซ้ำอีกครั้ง (แยกจาก masterDataEditUnlocked
+// ของหน้าตั้งค่า เพราะผลกระทบร้ายแรงกว่าการแก้รายชื่อ/พื้นที่มาก) บวก confirm() เตือนอีกชั้นก่อนลบจริง
+// ไม่แตะ config/masterData (รายชื่อ/พื้นที่/ประเภทปัญหา) เลย — ลบเฉพาะ records + photos subcollection
+async function clearCentralDatabase(){
+  if(!cloudReady || !fbDb || !fsApi){
+    showToast('ยังไม่ได้เชื่อมฐานข้อมูลกลาง (ออฟไลน์อยู่ตอนนี้) ลบไม่ได้', 'error');
+    return;
+  }
+  const pw = prompt('ใส่รหัสผ่านเพื่อยืนยันการลบข้อมูลในฐานข้อมูลกลางทั้งหมด (ต้องใส่ใหม่ทุกครั้ง แยกจากรหัสหน้าตั้งค่า เพราะผลกระทบร้ายแรงกว่ามาก):');
+  if(pw === null) return;
+  if(pw !== MASTER_DATA_ADMIN_PASSWORD){ showToast('รหัสผ่านไม่ถูกต้อง', 'error'); return; }
+  const sure = confirm('⚠️ ยืนยันลบผลตรวจ "ทุกรายการของทุกคนทุกเครื่อง" ออกจากฐานข้อมูลกลางถาวรใช่หรือไม่?\n\nการกระทำนี้ย้อนกลับไม่ได้ ข้อมูลจะหายจากทุกเครื่องทันที (รวมเครื่องนี้ด้วย) — ไม่กระทบรายชื่อ/พื้นที่/ประเภทปัญหา\n\nกด OK ถ้าแน่ใจจริง ๆ');
+  if(!sure) return;
+
+  const btn = document.getElementById('btnClearCentralDb');
+  const oldText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'กำลังลบ...';
+  try{
+    const snap = await fsApi.getDocs(fsApi.collection(fbDb, 'records'));
+    let count = 0;
+    for(const d of snap.docs){
+      const photosSnap = await fsApi.getDocs(fsApi.collection(fbDb, 'records', d.id, 'photos'));
+      const batch = fsApi.writeBatch(fbDb);
+      photosSnap.forEach(p => batch.delete(p.ref));
+      batch.delete(fsApi.doc(fbDb, 'records', d.id));
+      await batch.commit();
+      count++;
+    }
+    await idbClearRecords();
+    DBX.records = [];
+    renderLocationsGrid(); renderHistoryTable();
+    showToast(`ลบข้อมูลในฐานข้อมูลกลางแล้ว (${count} รายการ)`, 'success');
+  }catch(e){
+    console.error('ลบฐานข้อมูลกลางไม่สำเร็จ:', e);
+    showToast('ลบไม่สำเร็จ: ' + e.message, 'error');
+  }finally{
+    btn.disabled = false; btn.textContent = oldText;
+  }
 }
 
 /* ======================================================================
@@ -2717,6 +2807,17 @@ async function handleExportExcel(){
     if(!buf) return;
     downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `ตรวจเวรวันหยุด_${state.date}.xlsx`);
     showToast('ส่งออกไฟล์ Excel แล้ว', 'success');
+  }, 'สร้างไฟล์ Excel ไม่สำเร็จ');
+}
+// ปุ่ม "ส่งออกฐานข้อมูลทั้งหมด" (หน้าตั้งค่า → ข้อมูล): เหมือน handleExportExcel แต่ไม่ผ่านตัวกรอง
+// ของแท็บประวัติเลย — เอา DBX.records ทั้งหมด (ทุกวัน ทุกคน ทุกพื้นที่ ทุกประเภท) เรียงจากล่าสุดไปเก่าสุด
+async function exportAllRecordsExcel(){
+  await withBusyButton('btnExportAllExcel', 'กำลังสร้าง Excel...', async () => {
+    const rows = DBX.records.slice().sort((a,b) => (b.checkDate||'').localeCompare(a.checkDate||'') || (b.createdAt||'').localeCompare(a.createdAt||''));
+    const buf = await generateHistoryExcel(rows);
+    if(!buf) return;
+    downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `ตรวจเวรวันหยุด_ฐานข้อมูลทั้งหมด_${todayStr()}.xlsx`);
+    showToast(`ส่งออกฐานข้อมูลทั้งหมดแล้ว (${rows.length} รายการ)`, 'success');
   }, 'สร้างไฟล์ Excel ไม่สำเร็จ');
 }
 // ปุ่ม "ส่ง PDF + Excel ทางอีเมล": สร้างทั้ง PDF และ Excel จากข้อมูลชุดเดียวกัน (filteredHistoryRecords()
@@ -2904,7 +3005,19 @@ function switchMainTab(tab){
   document.querySelectorAll('#tabbar .tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.getElementById('tab-check').classList.toggle('hidden', tab !== 'check');
   document.getElementById('tab-history').classList.toggle('hidden', tab !== 'history');
-  if(tab === 'history'){ renderHistoryFilters(); renderHistoryTable(); }
+  if(tab === 'history'){
+    renderHistoryFilters();
+    // ครั้งแรกที่ผู้ใช้เปิดแท็บประวัติเองในเซสชันนี้ (ไม่นับตอน INIT ที่ยังไม่ได้เปิดจริง) เอาชื่อที่
+    // เลือกไว้ที่หน้าแรกมาใส่ตัวกรอง "ผู้ตรวจ" ให้อัตโนมัติ — ครั้งต่อไปเคารพตัวกรองที่ผู้ใช้ตั้งเองไว้
+    if(!state.histInspectorDefaulted){
+      state.histInspectorDefaulted = true;
+      const ins = document.getElementById('histInspector');
+      if(state.inspectorName && [...ins.options].some(o => o.value === state.inspectorName)){
+        ins.value = state.inspectorName;
+      }
+    }
+    renderHistoryTable();
+  }
 }
 // สลับแท็บย่อยในหน้าตั้งค่า (ผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา / ข้อมูล) — render list
 // ของแท็บที่เพิ่งเปิดใหม่ทุกครั้ง กันข้อมูลค้างจากตอนแก้ในแท็บอื่นแล้วสลับกลับมา
@@ -2968,7 +3081,9 @@ function wireEvents(){
   document.getElementById('btnExportMaster2').addEventListener('click', exportMasterJson);
   document.getElementById('btnExportMaster3').addEventListener('click', exportMasterJson);
   document.getElementById('btnExportJson').addEventListener('click', exportBackupJson);
+  document.getElementById('btnExportAllExcel').addEventListener('click', exportAllRecordsExcel);
   document.getElementById('btnClearData').addEventListener('click', clearAllData);
+  document.getElementById('btnClearCentralDb').addEventListener('click', clearCentralDatabase);
 
   // สวิตช์ "โหมดทดสอบ" — เปิดต้องใส่รหัสผ่าน admin123 ก่อน (ใช้ prompt() ธรรมดา เพราะเป็นฟีเจอร์
   // สำหรับทดสอบโปรแกรมเท่านั้น ไม่ใช่ระบบความปลอดภัยจริงจัง) ปิดกลับคืนทำได้ทันทีไม่ต้องใส่รหัส
@@ -3028,6 +3143,7 @@ function wireEvents(){
   document.getElementById('btnSaveEventLog').addEventListener('click', submitEventLogForm);
 
   document.getElementById('btnHistFilter').addEventListener('click', renderHistoryTable);
+  document.getElementById('histInspector').addEventListener('change', renderHistoryTable);
   document.getElementById('histLocation').addEventListener('change', renderHistoryTable);
   document.getElementById('histStatus').addEventListener('change', renderHistoryTable);
   document.getElementById('btnHistExport').addEventListener('click', handleExportExcel);
