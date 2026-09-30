@@ -376,8 +376,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
       <!-- ค่าเริ่มต้นตรงนี้คือสถานะ "ยังไม่เชื่อมฐานข้อมูลกลาง" (แสดงก่อน JS โหลดเสร็จ) — พอเชื่อม
            Firebase สำเร็จ setConnStatusBadge(true) จะเปลี่ยนหน้าตาให้เอง (ดู ZONE: CLOUD SYNC) -->
       <button id="btnConnStatus" class="chip" title="ยังไม่ได้เชื่อมฐานข้อมูลกลาง ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ก่อน แล้ว sync ให้เองอัตโนมัติตอนเชื่อมต่อได้">💾<span class="chip-label"> ออฟไลน์</span></button>
-      <button id="btnHelp" class="icon-btn" title="วิธีใช้งาน">❓</button>
-      <button id="btnSettings" class="icon-btn" title="ตั้งค่า">⚙️</button>
+      <button id="btnSettings" class="icon-btn" title="ตั้งค่า (ต้องใส่รหัสผ่าน)">⚙️</button>
     </div>
   </header>
 
@@ -409,6 +408,9 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
                เดียวกับ index.html เสมอ (ทั้งบน GitHub Pages และถ้าแจกเป็นไฟล์ออฟไลน์ก็ต้องส่งคู่กัน)
                เพราะใช้ path แบบ relative ไม่ได้ฝังไฟล์ไว้ในตัว index.html เพื่อไม่ให้ไฟล์ใหญ่ขึ้นมาก -->
           <a class="btn ghost" href="./จุดตรวจพื้นที่-ITC.pdf" target="_blank" rel="noopener" style="margin-top:10px;">📄 ดูแผนผังจุดตรวจ ITC (PDF)</a>
+          <!-- ลิงก์เปิดไฟล์ PDF คู่มือการใช้งาน — วางไฟล์ "คู่มือการใช้งาน_ตรวจเวรวันหยุด.pdf" ไว้ในโฟลเดอร์
+               เดียวกับ index.html เสมอ เหมือนไฟล์แผนผังจุดตรวจด้านบน (relative path เช่นกัน) -->
+          <a class="btn ghost" href="./คู่มือการใช้งาน_ตรวจเวรวันหยุด.pdf" target="_blank" rel="noopener" style="margin-top:10px;">📘 คู่มือการใช้งาน</a>
         </div>
       </div>
 
@@ -636,7 +638,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-members" class="settings-panel">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้ sync กับ<b>ฐานข้อมูลกลาง</b> ทุกคนที่เปิดแอปเห็นชุดเดียวกันแบบ real-time — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้ (ถามครั้งแรกที่แก้ในแต่ละรอบเปิดแอปเท่านั้น)</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้ sync กับ<b>ฐานข้อมูลกลาง</b> ทุกคนที่เปิดแอปเห็นชุดเดียวกันแบบ real-time — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b></p>
         </div>
         <div class="card">
           <div class="row">
@@ -654,7 +656,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-areas" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b></p>
         </div>
         <div class="card">
           <div class="row">
@@ -673,7 +675,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-issues" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b></p>
         </div>
         <div class="card">
           <div class="field"><label>ประเภทปัญหา</label><input type="text" id="newIssueType" placeholder="เช่น ลมรั่ว"></div>
@@ -714,54 +716,6 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
             </label>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- โมดัล "วิธีใช้งาน" — คู่มือย่อในแอป ไม่ต้องต่อเน็ต ไม่ต้องเปิดไฟล์แยก เนื้อหาสรุปจากคู่มือ
-     ฉบับเต็ม (คู่มือการใช้งาน_ตรวจเวรวันหยุด.docx) ให้ตรงกันเสมอ — แก้ไฟล์ docx เมื่อไหร่ควรแก้
-     ตรงนี้ให้ตรงกันด้วย (หรือกลับกัน) -->
-<div id="modalHelp" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-head"><h3>❓ วิธีใช้งาน</h3><button class="modal-close" data-close="modalHelp">✕</button></div>
-    <div class="modal-body">
-      <div class="card">
-        <b>เกี่ยวกับระบบ</b>
-        <p style="font-size:13px;color:var(--text-soft);">"ตรวจเวรวันหยุด" ใช้บันทึกผลตรวจพื้นที่ในวันหยุด พร้อมบันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร/อุบัติเหตุ/ผู้รับเหมาเข้าพื้นที่ แล้วสรุปส่งรายงานทางอีเมลได้ในที่เดียว ใช้ผ่านเบราว์เซอร์ได้ทั้งมือถือและคอม ไม่ต้องติดตั้งแอปเพิ่ม ไม่ต้องสมัคร/ล็อกอิน</p>
-      </div>
-      <div class="card">
-        <b>1. เริ่มตรวจ</b>
-        <p style="font-size:13px;color:var(--text-soft);">พิมพ์ค้นหาชื่อตัวเองในช่อง "ชื่อผู้ตรวจ" → เลือกชื่อ → เช็กวันที่ (ใส่วันนี้ให้อัตโนมัติ) → กด "เริ่มตรวจเช็คตามลำดับ" ระบบจะจำชื่อล่าสุดไว้ให้ เปิดครั้งถัดไปไม่ต้องพิมพ์ใหม่</p>
-      </div>
-      <div class="card">
-        <b>2. ตรวจพื้นที่ตามโซน</b>
-        <p style="font-size:13px;color:var(--text-soft);">การ์ดแต่ละโซนมีสี 🟠 รอตรวจ / 🔵 กำลังตรวจ / 🟢 ตรวจแล้ว — แตะการ์ดโซนเพื่อดูจุดตรวจย่อย แตะ "รอตรวจ →" ที่จุดที่ต้องการ เลือกผล "ไม่พบสิ่งผิดปกติ" หรือ "พบสิ่งผิดปกติ" (ถ้าพบ จะมีช่องกรอกประเภทปัญหา/รายละเอียด/แนบรูป) แล้วกด "บันทึกและตรวจจุดถัดไป" ทำจนครบทุกจุด/ทุกโซน</p>
-      </div>
-      <div class="card">
-        <b>3. บันทึกรายการอื่น (ไม่บังคับ)</b>
-        <p style="font-size:13px;color:var(--text-soft);">เลื่อนลงล่างสุดของหน้าพื้นที่ตรวจ จะเจอการ์ด 📦 เบิกของสโตร์ / 🚚 ขนย้ายเครื่องจักร-อะไหล่ / 🚑 รายงานอุบัติเหตุ / 👷 ผู้รับเหมาขอเข้าพื้นที่ — แตะการ์ด แล้วกด "+ เพิ่มรายการ" กรอกข้อมูลแล้วบันทึกได้เรื่อยๆ ไม่จำกัดจำนวน</p>
-      </div>
-      <div class="card">
-        <b>4. ดูแผนผังจุดตรวจ (PDF)</b>
-        <p style="font-size:13px;color:var(--text-soft);">ปุ่ม "📄 ดูแผนผังจุดตรวจ ITC (PDF)" ที่หน้าแรก เปิดไฟล์แผนผังโรงงานอ้างอิงได้ทันที ไม่ต้องออกจากแอป</p>
-      </div>
-      <div class="card">
-        <b>5. ดูประวัติ + ส่งรายงาน</b>
-        <p style="font-size:13px;color:var(--text-soft);">แท็บ "ประวัติ" ด้านบน → กรองช่วงวันที่/พื้นที่/สถานะได้ตามต้องการ → เลือกส่งออก "⬇ ส่งออก Excel", "📄 ออกรายงาน PDF" หรือ "📧 ส่ง PDF + Excel ทางอีเมล" (มือถือที่รองรับจะเปิดหน้าต่างแชร์พร้อมไฟล์แนบให้เลย ส่วนคอมจะดาวน์โหลดไฟล์ให้แล้วเปิดดราฟต์อีเมลให้แนบเอง)</p>
-        <p style="font-size:13px;color:var(--text-soft);"><b>⚠️ ต้องตรวจครบทุกโซนก่อน</b> ปุ่ม "ส่ง PDF + Excel ทางอีเมล" ถึงจะกดได้ (ปุ่ม Excel/PDF เดี่ยวๆ กดดูได้ตลอดแม้ตรวจไม่ครบ)</p>
-      </div>
-      <div class="card" style="background:var(--sky-100);">
-        <b>📡 ข้อมูลอยู่ที่ไหน / ป้ายที่มุมขวาบนหมายถึงอะไร</b>
-        <p style="font-size:13px;color:var(--ink-700);">☁️ เชื่อมฐานข้อมูลกลาง = ข้อมูลกำลัง sync ขึ้นฐานข้อมูลกลางแบบ real-time ทุกเครื่องเห็นตรงกัน · 💾 ออฟไลน์ = ยังเชื่อมฐานข้อมูลกลางไม่ได้ตอนนี้ (เน็ตหลุด/ช้า) แต่ยังกรอก/บันทึกได้ตามปกติทุกอย่าง ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ก่อน แล้ว sync ให้เองอัตโนมัติทันทีที่เชื่อมต่อได้ ไม่ต้องทำอะไรเพิ่ม</p>
-      </div>
-      <div class="card">
-        <b>6. แก้ไขรายชื่อ/พื้นที่-โซน/ประเภทปัญหา</b>
-        <p style="font-size:13px;color:var(--text-soft);">⚙️ ตั้งค่า → แท็บ "ผู้ตรวจ" / "พื้นที่/โซน" / "ประเภทปัญหา" → เพิ่ม/ลบได้เลย (ต้องใส่รหัสผ่านตอนแก้ครั้งแรกในแต่ละรอบที่เปิดแอป) การแก้ไขมีผลกับทุกคนทันที ถ้าไม่มีรหัสผ่านให้ติดต่อผู้ดูแลระบบ</p>
-      </div>
-      <div class="card">
-        <b>มีปัญหาหรือข้อเสนอแนะ?</b>
-        <p style="font-size:13px;color:var(--text-soft);">แจ้งผู้ดูแลระบบของทีมได้โดยตรง — คู่มือฉบับเต็มพร้อมภาพประกอบขอได้จากผู้ดูแลระบบเช่นกัน</p>
       </div>
     </div>
   </div>
@@ -1653,11 +1607,11 @@ let masterDataEditUnlocked = false;
 // return: true ถ้าแก้ไขได้ (ปลดล็อกแล้ว), false ถ้ายกเลิก/รหัสผิด (ห้ามแก้ไข)
 function confirmMasterDataEdit(){
   if(masterDataEditUnlocked) return true;
-  const pw = prompt('ใส่รหัสผ่านเพื่อแก้ไขรายชื่อ/พื้นที่ส่วนกลาง (มีผลกับทุกคนทันที):');
+  const pw = prompt('ใส่รหัสผ่านเพื่อเข้าหน้าตั้งค่า (แก้ไขรายชื่อ/พื้นที่ส่วนกลาง มีผลกับทุกคนทันที):');
   if(pw === null) return false;
   if(pw !== MASTER_DATA_ADMIN_PASSWORD){ showToast('รหัสผ่านไม่ถูกต้อง', 'error'); return false; }
   masterDataEditUnlocked = true;
-  showToast('ปลดล็อกแก้ไขรายชื่อ/พื้นที่ส่วนกลางแล้ว (จนกว่าจะรีโหลดหน้า)', 'success');
+  showToast('ปลดล็อกหน้าตั้งค่าแล้ว (จนกว่าจะรีโหลดหน้า)', 'success');
   return true;
 }
 
@@ -3000,8 +2954,11 @@ function wireEvents(){
 
   document.querySelectorAll('#tabbar .tab').forEach(t => t.addEventListener('click', () => switchMainTab(t.dataset.tab)));
   document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', () => hideModal(b.dataset.close)));
-  document.getElementById('btnSettings').addEventListener('click', () => { showModal('modalSettings'); switchSettingsSubtab('members'); });
-  document.getElementById('btnHelp').addEventListener('click', () => showModal('modalHelp'));
+  // ปุ่ม ⚙️ ตั้งค่า ต้องใส่รหัสผ่านก่อนถึงจะเปิดหน้าตั้งค่าได้เลย (ไม่ต้องกดเข้าไปข้างในก่อนค่อยถูกถาม)
+  document.getElementById('btnSettings').addEventListener('click', () => {
+    if(!confirmMasterDataEdit()) return;
+    showModal('modalSettings'); switchSettingsSubtab('members');
+  });
   document.querySelectorAll('.subtabs button').forEach(b => b.addEventListener('click', () => switchSettingsSubtab(b.dataset.subtab)));
 
   document.getElementById('btnAddMember').addEventListener('click', addMember);
