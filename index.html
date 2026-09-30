@@ -128,7 +128,7 @@ input,select,textarea{font-family:inherit;}
 }
 .chip.ok{background:rgba(31,138,76,0.9);}
 .chip.warn{background:rgba(226,58,87,0.92);}
-@media (max-width:380px){
+@media (max-width:480px){
   #topbar .brand{font-size:15px;}
   .chip .chip-label{display:none;}
   .chip{padding:8px;}
@@ -373,7 +373,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
   <header id="topbar">
     <div class="brand">🛡️ ตรวจเวรวันหยุด <span style="font-weight:400;font-size:12px;opacity:.85;">(ออฟไลน์)</span></div>
     <div class="topbar-actions">
-      <button id="btnConnStatus" class="chip ok">💾<span class="chip-label"> ในเครื่องนี้</span></button>
+      <!-- ค่าเริ่มต้นตรงนี้คือสถานะ "ยังไม่เชื่อมฐานข้อมูลกลาง" (แสดงก่อน JS โหลดเสร็จ) — พอเชื่อม
+           Firebase สำเร็จ setConnStatusBadge(true) จะเปลี่ยนหน้าตาให้เอง (ดู ZONE: CLOUD SYNC) -->
+      <button id="btnConnStatus" class="chip" title="ยังไม่ได้เชื่อมฐานข้อมูลกลาง ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ก่อน แล้ว sync ให้เองอัตโนมัติตอนเชื่อมต่อได้">💾<span class="chip-label"> ออฟไลน์</span></button>
+      <button id="btnHelp" class="icon-btn" title="วิธีใช้งาน">❓</button>
       <button id="btnSettings" class="icon-btn" title="ตั้งค่า">⚙️</button>
     </div>
   </header>
@@ -633,61 +636,61 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
 
       <div id="settings-members" class="settings-panel">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้มาจากไฟล์ <b>data.js</b> ในระบบ ทุกคนเห็นชุดเดียวกันเสมอ — แก้ไขได้เฉพาะ <b>Dev</b> เท่านั้น โดยแก้ไฟล์ data.js บน GitHub โดยตรง การเพิ่ม/ลบด้านล่างมีผล<b>แค่เครื่องนี้ชั่วคราว</b> ใช้ดูตัวอย่าง/ทดสอบเท่านั้น ไม่ส่งผลกับคนอื่น</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายชื่อนี้ sync กับ<b>ฐานข้อมูลกลาง</b> ทุกคนที่เปิดแอปเห็นชุดเดียวกันแบบ real-time — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้ (ถามครั้งแรกที่แก้ในแต่ละรอบเปิดแอปเท่านั้น)</p>
         </div>
         <div class="card">
           <div class="row">
             <div class="field"><label>ชื่อ-สกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมชาย ใจดี"></div>
           </div>
-          <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ (ชั่วคราว)</button>
+          <button class="btn primary" id="btnAddMember">+ เพิ่มผู้ตรวจ</button>
         </div>
         <div id="memberList"></div>
         <div class="card">
-          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
-          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo ของแอปนี้ (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.members</code>) แล้ว commit — ทุกคนจะเห็นรายชื่อใหม่ภายใน 1-2 นาทีหลัง deploy เสร็จ ไม่ต้องเชื่อมระบบอื่นเพิ่ม</p>
-          <button class="btn ghost" id="btnExportMaster">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+          <b>สำรองรายชื่อปัจจุบัน</b>
+          <p style="font-size:12px;color:var(--text-soft);">ดาวน์โหลดรายชื่อตอนนี้เก็บไว้เป็นไฟล์ JSON ได้ เผื่อสำรอง หรือส่งให้ Dev อัปเดต <code>data.js</code> (ใช้เป็นค่าเริ่มต้นสำรอง กรณีเครื่องไหนยังไม่เคยเชื่อมฐานข้อมูลกลางได้เลย)</p>
+          <button class="btn ghost" id="btnExportMaster">⬇ ดาวน์โหลดรายการปัจจุบัน</button>
         </div>
       </div>
 
       <div id="settings-areas" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 รายการพื้นที่/โซนนี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้</p>
         </div>
         <div class="card">
           <div class="row">
             <div class="field autocomplete-wrap"><label>พื้นที่ (Location)</label><input type="text" id="newAreaLocation" autocomplete="off" placeholder="เช่น โรงงาน A"><div class="autocomplete-list hidden" id="locAutoList"></div></div>
             <div class="field"><label>โซน (Zone)</label><input type="text" id="newAreaZone" placeholder="เช่น โซน 1"></div>
           </div>
-          <button class="btn primary" id="btnAddArea">+ เพิ่มพื้นที่/โซน (ชั่วคราว)</button>
+          <button class="btn primary" id="btnAddArea">+ เพิ่มพื้นที่/โซน</button>
         </div>
         <div id="areaList"></div>
         <div class="card">
-          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
-          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.areas</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
-          <button class="btn ghost" id="btnExportMaster2">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+          <b>สำรองรายการปัจจุบัน</b>
+          <p style="font-size:12px;color:var(--text-soft);">ดาวน์โหลดรายการตอนนี้เก็บไว้เป็นไฟล์ JSON ได้ เผื่อสำรอง หรือส่งให้ Dev อัปเดต <code>data.js</code> (ใช้เป็นค่าเริ่มต้นสำรอง กรณีเครื่องไหนยังไม่เคยเชื่อมฐานข้อมูลกลางได้เลย)</p>
+          <button class="btn ghost" id="btnExportMaster2">⬇ ดาวน์โหลดรายการปัจจุบัน</button>
         </div>
       </div>
 
       <div id="settings-issues" class="settings-panel hidden">
         <div class="card" style="background:var(--sky-100);">
-          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้มาจากไฟล์ <b>data.js</b> เช่นกัน — แก้ไขได้เฉพาะ Dev ผ่าน GitHub การเพิ่ม/ลบด้านล่างมีผลแค่เครื่องนี้ชั่วคราว ใช้ดูตัวอย่างเท่านั้น</p>
+          <p style="font-size:12px;color:var(--ink-700);margin:0;">📌 ตัวเลือก "ประเภทปัญหา" นี้ sync กับ<b>ฐานข้อมูลกลาง</b>เช่นกัน — การเพิ่ม/ลบด้านล่าง<b>มีผลกับทุกคนทันที</b> ต้องใส่รหัสผ่านก่อนแก้</p>
         </div>
         <div class="card">
           <div class="field"><label>ประเภทปัญหา</label><input type="text" id="newIssueType" placeholder="เช่น ลมรั่ว"></div>
-          <button class="btn primary" id="btnAddIssueType">+ เพิ่มประเภทปัญหา (ชั่วคราว)</button>
+          <button class="btn primary" id="btnAddIssueType">+ เพิ่มประเภทปัญหา</button>
         </div>
         <div id="issueTypeList"></div>
         <div class="card">
-          <b>ต้องการเพิ่ม/แก้ไขจริง?</b>
-          <p style="font-size:12px;color:var(--text-soft);">แจ้ง Dev ให้แก้ไฟล์ <code>data.js</code> ใน GitHub repo (เพิ่ม/ลบรายการใน <code>window.MASTER_DATA.issueTypes</code>) แล้ว commit — ทุกคนจะเห็นรายการใหม่ภายใน 1-2 นาที</p>
-          <button class="btn ghost" id="btnExportMaster3">⬇ ดาวน์โหลดรายการปัจจุบัน (ส่งให้ Dev อ้างอิง)</button>
+          <b>สำรองรายการปัจจุบัน</b>
+          <p style="font-size:12px;color:var(--text-soft);">ดาวน์โหลดรายการตอนนี้เก็บไว้เป็นไฟล์ JSON ได้ เผื่อสำรอง หรือส่งให้ Dev อัปเดต <code>data.js</code> (ใช้เป็นค่าเริ่มต้นสำรอง กรณีเครื่องไหนยังไม่เคยเชื่อมฐานข้อมูลกลางได้เลย)</p>
+          <button class="btn ghost" id="btnExportMaster3">⬇ ดาวน์โหลดรายการปัจจุบัน</button>
         </div>
       </div>
 
       <div id="settings-data" class="settings-panel hidden">
         <div class="card">
           <b>เกี่ยวกับข้อมูล</b>
-          <p style="font-size:12px;color:var(--text-soft);">รายชื่อผู้ตรวจและพื้นที่/โซน โหลดมาจากไฟล์ <b>data.js</b> ที่อยู่บนเว็บ (ส่วนกลาง ทุกคนเห็นเหมือนกัน แก้ได้เฉพาะ Dev ผ่าน GitHub) ส่วนผลตรวจและรูปถ่ายที่บันทึกจะเก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น ไม่ส่งขึ้นที่ไหน — ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ผลตรวจจะหายไป กรุณาออกรายงาน PDF หรือสำรองไฟล์ไว้เป็นระยะ</p>
+          <p style="font-size:12px;color:var(--text-soft);">รายชื่อผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหา และผลตรวจ+รูปถ่ายทั้งหมด sync กับ<b>ฐานข้อมูลกลาง</b>อัตโนมัติ (ดูป้ายสถานะที่มุมขวาบน) ทุกเครื่องที่เชื่อมได้จะเห็นตรงกัน แม้เปลี่ยนเครื่อง/ล้างข้อมูลเบราว์เซอร์ก็ดึงกลับมาได้ — ถ้าเน็ตหลุด/เชื่อมฐานข้อมูลกลางไม่ได้ ก็ยังกรอก/บันทึกในเครื่องนี้ได้ตามปกติ แล้วจะ sync ให้เองอัตโนมัติตอนเชื่อมต่อได้อีกครั้ง</p>
         </div>
         <div class="card">
           <b>สำรองข้อมูลผลตรวจ</b>
@@ -695,9 +698,9 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
           <button class="btn secondary" id="btnExportJson">⬇ ส่งออกไฟล์สำรองผลตรวจ</button>
         </div>
         <div class="card">
-          <b>ลบผลตรวจทั้งหมดในเครื่องนี้</b>
-          <p style="font-size:12px;color:var(--text-soft);">ลบผลตรวจ/รูปทั้งหมดที่บันทึกไว้ในเครื่องนี้ทิ้งถาวร (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) ใช้เมื่อต้องการเริ่มใหม่เท่านั้น</p>
-          <button class="btn ghost" id="btnClearData" style="color:var(--danger);">🗑 ลบผลตรวจทั้งหมด</button>
+          <b>ล้างแคชผลตรวจในเครื่องนี้</b>
+          <p style="font-size:12px;color:var(--text-soft);">ล้างผลตรวจ/รูปที่แคชไว้ในเครื่องนี้ (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) — ถ้าเครื่องนี้เชื่อมฐานข้อมูลกลางอยู่ ข้อมูลจะถูกดึงกลับมาใหม่อัตโนมัติตอนเปิดแอปครั้งถัดไป (ไม่ได้ลบทิ้งถาวร)</p>
+          <button class="btn ghost" id="btnClearData" style="color:var(--danger);">🗑 ล้างแคชผลตรวจ</button>
         </div>
         <div class="card" style="border:1.5px solid var(--amber-500);background:var(--amber-100);">
           <div class="switch-row">
@@ -711,6 +714,54 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:#fff;}
             </label>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- โมดัล "วิธีใช้งาน" — คู่มือย่อในแอป ไม่ต้องต่อเน็ต ไม่ต้องเปิดไฟล์แยก เนื้อหาสรุปจากคู่มือ
+     ฉบับเต็ม (คู่มือการใช้งาน_ตรวจเวรวันหยุด.docx) ให้ตรงกันเสมอ — แก้ไฟล์ docx เมื่อไหร่ควรแก้
+     ตรงนี้ให้ตรงกันด้วย (หรือกลับกัน) -->
+<div id="modalHelp" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-head"><h3>❓ วิธีใช้งาน</h3><button class="modal-close" data-close="modalHelp">✕</button></div>
+    <div class="modal-body">
+      <div class="card">
+        <b>เกี่ยวกับระบบ</b>
+        <p style="font-size:13px;color:var(--text-soft);">"ตรวจเวรวันหยุด" ใช้บันทึกผลตรวจพื้นที่ในวันหยุด พร้อมบันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร/อุบัติเหตุ/ผู้รับเหมาเข้าพื้นที่ แล้วสรุปส่งรายงานทางอีเมลได้ในที่เดียว ใช้ผ่านเบราว์เซอร์ได้ทั้งมือถือและคอม ไม่ต้องติดตั้งแอปเพิ่ม ไม่ต้องสมัคร/ล็อกอิน</p>
+      </div>
+      <div class="card">
+        <b>1. เริ่มตรวจ</b>
+        <p style="font-size:13px;color:var(--text-soft);">พิมพ์ค้นหาชื่อตัวเองในช่อง "ชื่อผู้ตรวจ" → เลือกชื่อ → เช็กวันที่ (ใส่วันนี้ให้อัตโนมัติ) → กด "เริ่มตรวจเช็คตามลำดับ" ระบบจะจำชื่อล่าสุดไว้ให้ เปิดครั้งถัดไปไม่ต้องพิมพ์ใหม่</p>
+      </div>
+      <div class="card">
+        <b>2. ตรวจพื้นที่ตามโซน</b>
+        <p style="font-size:13px;color:var(--text-soft);">การ์ดแต่ละโซนมีสี 🟠 รอตรวจ / 🔵 กำลังตรวจ / 🟢 ตรวจแล้ว — แตะการ์ดโซนเพื่อดูจุดตรวจย่อย แตะ "รอตรวจ →" ที่จุดที่ต้องการ เลือกผล "ไม่พบสิ่งผิดปกติ" หรือ "พบสิ่งผิดปกติ" (ถ้าพบ จะมีช่องกรอกประเภทปัญหา/รายละเอียด/แนบรูป) แล้วกด "บันทึกและตรวจจุดถัดไป" ทำจนครบทุกจุด/ทุกโซน</p>
+      </div>
+      <div class="card">
+        <b>3. บันทึกรายการอื่น (ไม่บังคับ)</b>
+        <p style="font-size:13px;color:var(--text-soft);">เลื่อนลงล่างสุดของหน้าพื้นที่ตรวจ จะเจอการ์ด 📦 เบิกของสโตร์ / 🚚 ขนย้ายเครื่องจักร-อะไหล่ / 🚑 รายงานอุบัติเหตุ / 👷 ผู้รับเหมาขอเข้าพื้นที่ — แตะการ์ด แล้วกด "+ เพิ่มรายการ" กรอกข้อมูลแล้วบันทึกได้เรื่อยๆ ไม่จำกัดจำนวน</p>
+      </div>
+      <div class="card">
+        <b>4. ดูแผนผังจุดตรวจ (PDF)</b>
+        <p style="font-size:13px;color:var(--text-soft);">ปุ่ม "📄 ดูแผนผังจุดตรวจ ITC (PDF)" ที่หน้าแรก เปิดไฟล์แผนผังโรงงานอ้างอิงได้ทันที ไม่ต้องออกจากแอป</p>
+      </div>
+      <div class="card">
+        <b>5. ดูประวัติ + ส่งรายงาน</b>
+        <p style="font-size:13px;color:var(--text-soft);">แท็บ "ประวัติ" ด้านบน → กรองช่วงวันที่/พื้นที่/สถานะได้ตามต้องการ → เลือกส่งออก "⬇ ส่งออก Excel", "📄 ออกรายงาน PDF" หรือ "📧 ส่ง PDF + Excel ทางอีเมล" (มือถือที่รองรับจะเปิดหน้าต่างแชร์พร้อมไฟล์แนบให้เลย ส่วนคอมจะดาวน์โหลดไฟล์ให้แล้วเปิดดราฟต์อีเมลให้แนบเอง)</p>
+        <p style="font-size:13px;color:var(--text-soft);"><b>⚠️ ต้องตรวจครบทุกโซนก่อน</b> ปุ่ม "ส่ง PDF + Excel ทางอีเมล" ถึงจะกดได้ (ปุ่ม Excel/PDF เดี่ยวๆ กดดูได้ตลอดแม้ตรวจไม่ครบ)</p>
+      </div>
+      <div class="card" style="background:var(--sky-100);">
+        <b>📡 ข้อมูลอยู่ที่ไหน / ป้ายที่มุมขวาบนหมายถึงอะไร</b>
+        <p style="font-size:13px;color:var(--ink-700);">☁️ เชื่อมฐานข้อมูลกลาง = ข้อมูลกำลัง sync ขึ้นฐานข้อมูลกลางแบบ real-time ทุกเครื่องเห็นตรงกัน · 💾 ออฟไลน์ = ยังเชื่อมฐานข้อมูลกลางไม่ได้ตอนนี้ (เน็ตหลุด/ช้า) แต่ยังกรอก/บันทึกได้ตามปกติทุกอย่าง ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ก่อน แล้ว sync ให้เองอัตโนมัติทันทีที่เชื่อมต่อได้ ไม่ต้องทำอะไรเพิ่ม</p>
+      </div>
+      <div class="card">
+        <b>6. แก้ไขรายชื่อ/พื้นที่-โซน/ประเภทปัญหา</b>
+        <p style="font-size:13px;color:var(--text-soft);">⚙️ ตั้งค่า → แท็บ "ผู้ตรวจ" / "พื้นที่/โซน" / "ประเภทปัญหา" → เพิ่ม/ลบได้เลย (ต้องใส่รหัสผ่านตอนแก้ครั้งแรกในแต่ละรอบที่เปิดแอป) การแก้ไขมีผลกับทุกคนทันที ถ้าไม่มีรหัสผ่านให้ติดต่อผู้ดูแลระบบ</p>
+      </div>
+      <div class="card">
+        <b>มีปัญหาหรือข้อเสนอแนะ?</b>
+        <p style="font-size:13px;color:var(--text-soft);">แจ้งผู้ดูแลระบบของทีมได้โดยตรง — คู่มือฉบับเต็มพร้อมภาพประกอบขอได้จากผู้ดูแลระบบเช่นกัน</p>
       </div>
     </div>
   </div>
@@ -1172,28 +1223,101 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 <script src="./data.js"></script>
 <script type="module">
 /* ══════════════════════════════════════════════════════════════════════
+   Firebase (ฐานข้อมูลกลาง) — โหลด SDK ตรงจาก CDN ของ Google เอง ไม่ต้องติดตั้ง
+   อะไรเพิ่ม ใช้ dynamic import() ในฟังก์ชัน initFirebaseSdk() ด้านล่าง (เรียกตอน
+   INIT ท้ายไฟล์) แทน static import ตรง ๆ เพราะถ้าใช้ static import แล้วโหลดจาก
+   gstatic.com ไม่สำเร็จ (เน็ตหลุด/องค์กรบล็อกโดเมนนี้ — เจอจริงระหว่างทดสอบ) จะทำให้
+   "ทั้งไฟล์ index.html พังหมดทันที" แม้แต่ฟีเจอร์ที่ไม่เกี่ยวกับ Firebase เลยก็ใช้ไม่ได้
+   (เพราะ <script type="module"> ทั้งก้อนจะไม่รันเลยถ้า import บนสุดล้มเหลว) ใช้ dynamic
+   import ในฟังก์ชัน async แทน ถ้าโหลดไม่สำเร็จก็แค่ข้าม Cloud Sync ไปเฉย ๆ แอปที่เหลือ
+   ทั้งหมดยังทำงานได้ปกติทุกอย่างเหมือนตอนยังไม่มี Firebase เลย (ออฟไลน์ล้วน ๆ)
+   รายละเอียดการทำงานทั้งหมดดูที่ ZONE: CLOUD SYNC ด้านล่าง (ค้นหาคำนี้)
+   ══════════════════════════════════════════════════════════════════════ */
+// ค่า config นี้ "ปลอดภัยที่จะฝังในโค้ดสาธารณะ" ตัวที่ป้องกันจริงคือ Security Rules
+// ที่ตั้งไว้ในฝั่ง Firebase Console (ดู README.md หัวข้อ Firebase) ไม่ใช่การซ่อนค่าพวกนี้
+const firebaseConfig = {
+  apiKey: "AIzaSyC0X-5P6rJqgToyE5h2TCLxz6TYDWVvnpg",
+  authDomain: "holiday-duty-check.firebaseapp.com",
+  projectId: "holiday-duty-check",
+  storageBucket: "holiday-duty-check.firebasestorage.app",
+  messagingSenderId: "904157444256",
+  appId: "1:904157444256:web:144d3c2a71f23ab1a031c5",
+  measurementId: "G-B2SKHG3YHK",
+};
+let fbApp = null, fbAuth = null, fbDb = null;
+let fsApi = null;   // เก็บฟังก์ชันทั้งหมดจาก firebase-firestore.js หลังโหลดสำเร็จ (doc, setDoc, ...)
+let authApi = null; // เก็บฟังก์ชันทั้งหมดจาก firebase-auth.js หลังโหลดสำเร็จ (signInAnonymously, ...)
+
+// โหลด Firebase SDK แบบ dynamic import — เรียกครั้งเดียวตอน INIT ท้ายไฟล์ (ไม่บล็อกการ
+// เปิดแอป) ถ้าโหลดไม่สำเร็จ (เน็ตหลุด/ถูกบล็อก) จะ return false แล้วแอปทำงานแบบออฟไลน์
+// ล้วน ๆ ต่อไปได้ปกติทุกฟีเจอร์ ยกเว้น sync ขึ้นฐานข้อมูลกลาง
+// return: Promise<boolean> — true ถ้าเชื่อม Firebase SDK ได้ (ยังไม่ได้แปลว่า sign-in สำเร็จ)
+async function initFirebaseSdk(){
+  try{
+    const [appMod, firestoreMod, authMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js'),
+    ]);
+    fsApi = firestoreMod;
+    authApi = authMod;
+    fbApp = appMod.initializeApp(firebaseConfig);
+    fbAuth = authApi.getAuth(fbApp);
+    fbDb = fsApi.getFirestore(fbApp);
+    // เปิดคิวออฟไลน์ให้ Firestore เอง — พิมพ์ผลตรวจตอนเน็ตหลุดได้ปกติ แล้ว SDK จะส่งขึ้นฐานข้อมูล
+    // กลางให้อัตโนมัติตอนเน็ตกลับมา ไม่ต้องเขียนระบบคิวเอง (ล้มเหลวได้เฉพาะตอนเปิดแอปนี้หลายแท็บ
+    // พร้อมกันในเบราว์เซอร์เดียว ซึ่งไม่กระทบการทำงานอื่นเลย แค่ไม่มีคิวออฟไลน์ในแท็บที่ไม่ใช่แท็บแรก)
+    try{ await fsApi.enableIndexedDbPersistence(fbDb); }catch(e){ console.warn('เปิด Firestore offline persistence ไม่สำเร็จ:', e); }
+    return true;
+  }catch(err){
+    console.warn('โหลด Firebase SDK ไม่สำเร็จ (เน็ตหลุด/ถูกบล็อก) — แอปจะทำงานแบบออฟไลน์อย่างเดียว ไม่กระทบการใช้งานหลัก:', err);
+    fbApp = null; fbAuth = null; fbDb = null; fsApi = null; authApi = null;
+    return false;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    ภาพรวมแอป "ตรวจเวรวันหยุด" (Holiday Duty Check) — อ่านก่อนแก้โค้ด
    ══════════════════════════════════════════════════════════════════════
 
-   แอปนี้เป็นไฟล์ HTML เดียวจบ (CSS ใน <style>, JS ทั้งหมดในนี้) ทำงานได้แม้
-   ไม่ต่อเน็ต ไม่มีเซิร์ฟเวอร์/ฐานข้อมูลกลางใด ๆ เก็บโฮสต์ผ่าน GitHub Pages
-   ก็พอ (ดู README.md)
+   แอปนี้เป็นไฟล์ HTML เดียวจบ (CSS ใน <style>, JS ทั้งหมดในนี้) ทำงานได้แม้ไม่ต่อเน็ต
+   เก็บโฮสต์ผ่าน GitHub Pages ก็พอ (ดู README.md) ตั้งแต่เพิ่ม Firebase เข้ามา ผลตรวจจะ
+   sync ขึ้นฐานข้อมูลกลาง (Firestore) ด้วย ทำให้ทุกคนที่ใช้แอปนี้เห็นผลตรวจของกันและกันได้
+   แต่ต่อให้เน็ตหลุดหรือ Firebase ล่ม แอปก็ยังกรอก/บันทึกลงเครื่องได้ตามปกติ (ดู ZONE: CLOUD
+   SYNC ด้านล่างสำหรับกลไก sync ทั้งหมด)
 
-   ── ข้อมูลมาจากไหนบ้าง (3 แหล่ง แยกกันชัดเจน) ──
+   ── ข้อมูลมาจากไหนบ้าง (4 แหล่ง แยกกันชัดเจน) ──
    1) data.js (ไฟล์แยก โหลดด้วย <script src="./data.js"> ก่อนหน้า script นี้)
-      ตั้งค่า window.MASTER_DATA = { members, areas, issueTypes } ไว้ให้
-      → คือ "รายชื่อผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา" ที่ทุกคนเห็นเหมือนกัน
-      → แก้ให้มีผลจริงกับทุกคนได้เฉพาะ Dev เท่านั้น (แก้ data.js บน GitHub แล้ว commit)
-      → อ่านเข้าโปรแกรมที่ loadMaster() ด้านล่าง เก็บไว้ในตัวแปร DBX
-   2) IndexedDB (ฐานข้อมูลในเบราว์เซอร์ของเครื่องนั้น ๆ เท่านั้น ไม่ส่งขึ้นเน็ต)
-      → เก็บ "ผลตรวจ" (records) รวมรูปถ่ายที่บีบอัดแล้ว เป็น local-only ต่อเครื่อง
-      → ฟังก์ชันกลุ่ม idbGetAll / idbPut / idbDelete / idbClearRecords จัดการส่วนนี้
-      → ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง ผลตรวจในเครื่องนั้นจะหายไปเลย
-        (ต้องออกรายงาน PDF/Excel เก็บไว้เองเป็นระยะ)
-   3) ตัวแปรในหน่วยความจำ (DBX, state) — อยู่แค่ตอนเปิดหน้าเว็บ รีเฟรชแล้วหาย
-      → DBX คือ "ข้อมูลที่โหลดมาแสดงตอนนี้" (members/areas/issueTypes จาก data.js
-        + records จาก IndexedDB) การเพิ่ม/ลบในหน้าตั้งค่า (เช่นเพิ่มผู้ตรวจชั่วคราว)
-        แก้แค่ DBX ตรงนี้ ไม่ได้เขียนกลับ data.js จริง ๆ (เป็นแค่ preview ในเครื่อง)
+      ตั้งค่า window.MASTER_DATA = { members, areas, zoneGroups, issueTypes, orgList } ไว้ให้
+      → คือ "รายชื่อผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา / ฝ่าย-แผนก" ชุด "ค่าเริ่มต้นสำรอง"
+        เท่านั้น — ใช้จริงเฉพาะตอนเครื่องนั้นยังไม่เคย sync กับฐานข้อมูลกลางสำเร็จเลย (ดู
+        loadMaster() ด้านล่าง) ปกติแล้วข้อมูลจริงจะมาจาก Firestore (ข้อ 3) แทน
+      → แก้ไฟล์นี้ได้เฉพาะ Dev ผ่าน GitHub (ใช้เป็น fallback/สำรองเท่านั้น ไม่ใช่จุดแก้จริง
+        อีกต่อไป — จุดแก้จริงคือหน้าตั้งค่าในแอป ต้องใส่รหัสผ่าน ดูข้อ 3)
+   2) IndexedDB (ฐานข้อมูลในเบราว์เซอร์ของเครื่องนั้น ๆ) — ยังเป็น "ความจริงของหน้าจอ"
+      เหมือนเดิมทุกประการ ทุกฟังก์ชัน render (การ์ดโซน, ตารางประวัติ, PDF/Excel ฯลฯ)
+      อ่านจากตรงนี้อย่างเดียว ไม่ได้อ่านจาก Firestore ตรง ๆ เลย
+      → เก็บทั้ง "ผลตรวจ" (records store) และ "สำเนา master data ล่าสุดที่เคย sync"
+        (masterDataCache store — เพิ่มพร้อมฟีเจอร์ฐานข้อมูลกลางสำหรับ master data)
+      → ฟังก์ชันกลุ่ม idbGetAll / idbPut / idbDelete / idbClearRecords / idbGetMasterDataCache
+        / idbPutMasterDataCache จัดการส่วนนี้
+      → ถ้าล้างข้อมูลเบราว์เซอร์ ทั้งผลตรวจและ master data ในเครื่องนั้นจะถูกดึงกลับมาจาก
+        ฐานข้อมูลกลาง (Firestore) ให้เองอัตโนมัติตอนเปิดแอปครั้งถัดไป (ไม่หายจริงอีกต่อไป
+        ตราบใดที่ยังเชื่อมต่อฐานข้อมูลกลางได้)
+   3) Firestore (ฐานข้อมูลกลาง บน Firebase) — เก็บทั้งผลตรวจและ master data ให้ใช้ร่วมกันได้
+      ทุกเครื่อง/ทุกคน เป็น "ชั้น sync" ที่คอยส่งข้อมูลไป-กลับกับ IndexedDB ของแต่ละเครื่อง
+      เท่านั้น ไม่มีหน้าจอไหนอ่านจาก Firestore ตรง ๆ เลย
+      → ผลตรวจ: ฟังก์ชันกลุ่ม cloudPushRecord / cloudDeleteRecord / startCloudSync
+      → master data (ผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหา/ฝ่าย-แผนก): ฟังก์ชันกลุ่ม
+        cloudPushMasterData / startMasterDataCloudSync / seedMasterDataToCloudIfEmpty —
+        แก้ได้จากหน้าตั้งค่าในแอปโดยตรง (ต้องใส่รหัสผ่านก่อน ดู confirmMasterDataEdit)
+        ไม่ต้องพึ่ง Dev/GitHub แบบเดิมอีกต่อไป
+      ทั้งหมดอยู่ใน ZONE: CLOUD SYNC
+      → ต้อง sign-in แบบ Anonymous ก่อนถึงจะอ่าน/เขียนได้ (ดู Security Rules ใน
+        README.md) — ผู้ใช้ไม่เห็นหน้า login ใด ๆ เกิดขึ้นอัตโนมัติตอนเปิดแอป
+   4) ตัวแปรในหน่วยความจำ (DBX, state) — อยู่แค่ตอนเปิดหน้าเว็บ รีเฟรชแล้วหาย
+      → DBX คือ "ข้อมูลที่โหลดมาแสดงตอนนี้" (members/areas/zoneGroups/issueTypes/orgList
+        จาก IndexedDB cache หรือ data.js + records จาก IndexedDB)
       → state คือค่าที่กำลังกรอกอยู่ตอนนี้ (แผนก/ชื่อผู้ตรวจ/วันที่/รูปที่ยังไม่บันทึก ฯลฯ)
 
    ── ความสามารถหลัก (ผูกกับโซนโค้ดด้านล่าง ไล่ตามลำดับในไฟล์) ──
@@ -1203,8 +1327,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
      • Excel (.xlsx) — ฝังรูปแนบเป็นรูปจริงในคอลัมน์ (ใช้ไลบรารี ExcelJS)
      • PDF — จัดหน้ารายงานสวยงาม ฝังฟอนต์ไทย Anuphan ในไฟล์ (ใช้ไลบรารี jsPDF)
        และแชร์ผ่าน Web Share API ได้ถ้าเบราว์เซอร์รองรับ (เช่นมือถือ)
-   - ตั้งค่า: ดูตัวอย่างเพิ่ม/ลบผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหาชั่วคราวในเครื่อง
-     (ไม่กระทบคนอื่น) + ปุ่มดาวน์โหลดไฟล์ JSON ส่งให้ Dev เอาไปใส่ data.js จริง
+   - ตั้งค่า: เพิ่ม/ลบผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหา (ต้องใส่รหัสผ่านก่อน — มีผลกับทุกคน
+     ทันทีเพราะ sync ขึ้นฐานข้อมูลกลาง) + ปุ่มดาวน์โหลดไฟล์ JSON สำรอง/ส่งให้ Dev อ้างอิง
 
    ── ไลบรารีภายนอกที่ฝังไว้ในไฟล์นี้ (เพื่อให้ทำงานออฟไลน์ได้ 100%) ──
    - jsPDF (สร้าง PDF), ExcelJS (สร้าง .xlsx), ฟอนต์ Anuphan แบบ base64
@@ -1218,7 +1342,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
    เครื่องนี้เท่านั้น ไม่มีเซิร์ฟเวอร์/คลาวด์ ไม่ส่งข้อมูลออกไปไหน
    ====================================================================== */
 const IDB_NAME = 'dutyCheckLocalDB';
-const IDB_VERSION = 2;
+const IDB_VERSION = 3;
 let _idbPromise = null; // แคช Promise ของการเปิดฐานข้อมูลไว้ เปิดครั้งเดียวพอ
 
 // เปิด (หรือสร้างถ้ายังไม่มี) ฐานข้อมูล IndexedDB ของแอปนี้ในเบราว์เซอร์
@@ -1229,13 +1353,28 @@ function openIdb(){
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = () => {
       const dbi = req.result;
-      // members/areas ย้ายไปโหลดจาก data.js (window.MASTER_DATA) ส่วนกลางแทน (ไม่เก็บใน IndexedDB อีกต่อไป)
       if(!dbi.objectStoreNames.contains('records')) dbi.createObjectStore('records', { keyPath:'id' });
+      // masterDataCache: เก็บสำเนาล่าสุดของรายชื่อผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหา/ฝ่าย-แผนก
+      // ที่ sync มาจากฐานข้อมูลกลาง (Firestore) ไว้ในเครื่องนี้ (เพิ่มตอน v3 พร้อมฟีเจอร์
+      // ฐานข้อมูลกลางสำหรับ master data) — มีแถวเดียวเสมอ id='current' ใช้แทน data.js เป็น
+      // "ความจริงล่าสุด" ทันทีที่เคย sync สำเร็จอย่างน้อย 1 ครั้ง (ดู loadMaster() ด้านล่าง)
+      if(!dbi.objectStoreNames.contains('masterDataCache')) dbi.createObjectStore('masterDataCache', { keyPath:'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
   return _idbPromise;
+}
+// อ่านสำเนา master data ที่ sync ไว้ล่าสุดในเครื่องนี้ (ถ้าไม่เคย sync มาก่อนเลยจะได้ null
+// แล้ว loadMaster() จะ fallback ไปใช้ window.MASTER_DATA จาก data.js แทน)
+async function idbGetMasterDataCache(){
+  const rows = await idbGetAll('masterDataCache');
+  return rows.find(r => r.id === 'current') || null;
+}
+// บันทึก/ทับสำเนา master data ล่าสุดที่ sync มาจากฐานข้อมูลกลาง (หรือที่เพิ่งแก้ในเครื่องนี้
+// เอง) ไว้ใน IndexedDB เพื่อให้เปิดแอปครั้งถัดไปเห็นข้อมูลล่าสุดได้ทันทีแม้ยังไม่ทัน sync ใหม่
+function idbPutMasterDataCache({ members, areas, zoneGroups, issueTypes, orgList }){
+  return idbPut('masterDataCache', { id: 'current', members, areas, zoneGroups, issueTypes, orgList, cachedAt: new Date().toISOString() });
 }
 // อ่านทุก record ใน object store ที่ระบุ (ตอนนี้มีแค่ store เดียวคือ 'records')
 // return: Promise<Array> ของ object ทั้งหมดใน store นั้น
@@ -1273,6 +1412,253 @@ function idbClearRecords(){
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   }));
+}
+
+/* ======================================================================
+   ZONE: CLOUD SYNC (Firebase Firestore) — ให้ผลตรวจจากทุกเครื่อง/ทุกคนที่ใช้แอปนี้
+   ขึ้นมารวมกันเห็นตรงกันได้ (ต่างจาก IndexedDB เดิมที่แยกเป็นเครื่องใครเครื่องมัน)
+
+   หลักการ: IndexedDB ยังเป็น "ความจริงของหน้าจอ" เหมือนเดิมทุกประการ — ทุกฟังก์ชัน
+   render (renderLocationsGrid, renderHistoryTable, PDF/Excel ฯลฯ) อ่านจาก DBX.records
+   ที่มาจาก IndexedDB เท่านั้น ไม่ต้องแก้อะไรเลย Firestore เป็นแค่ "ท่อ sync" คอยทำ 2 อย่าง:
+     1) push — พอมีคนบันทึก/ลบผลตรวจในเครื่องนี้ ก็ส่งขึ้น Firestore ด้วย (คู่ขนานกับ
+        idbPut/idbDelete เดิมทุกจุดที่เรียก — ดูจุดเรียก cloudPushRecord/cloudDeleteRecord)
+     2) pull — ฟังการเปลี่ยนแปลงบน Firestore แบบ real-time (onSnapshot) พอมีเครื่องอื่น
+        บันทึก/ลบอะไรมา ก็เอามา idbPut/idbDelete ใส่ IndexedDB เครื่องนี้ด้วย แล้วเรียก
+        refreshRecords() ให้หน้าจอรีเฟรชเอง
+
+   รูปถ่ายเก็บแยกเป็นเอกสารย่อยทีละรูปใน subcollection records/{id}/photos/{n} แทนที่จะ
+   ฝังรวมเป็น field เดียวในเอกสารหลัก เพราะ Firestore จำกัดขนาดเอกสารไว้ที่ 1MB/เอกสาร
+   ถ้ามีคนแนบหลายรูปในจุดตรวจเดียวอาจชนขีดจำกัดได้ถ้ารวมไว้ที่เดียว แยกเป็นรูปละเอกสาร
+   (แต่ละรูปมีโควต้า 1MB เป็นของตัวเอง) แก้ปัญหานี้ได้เลยโดยไม่ต้องบีบอัดรูปแรงขึ้นกว่าที่
+   compressImage() ทำอยู่แล้ว (ยังคมชัดเท่าเดิมทุกประการ)
+
+   ทำงานแบบ "ออฟไลน์ก่อน เดี๋ยว sync เอง": enableIndexedDbPersistence() (ด้านบนสุดของไฟล์
+   ตรง import Firebase) ทำให้ SDK คิวคำสั่ง push ไว้เองอัตโนมัติตอนไม่มีเน็ต แล้วส่งจริงตอน
+   เน็ตกลับมา ไม่ต้องเขียนระบบคิวเอง
+   ====================================================================== */
+let cloudReady = false; // true หลัง sign-in สำเร็จ — กันไม่ให้ push/pull ก่อนพร้อม
+
+// อัปเดตป้ายสถานะการเชื่อมต่อฐานข้อมูลกลางที่มุมขวาบน (#btnConnStatus) ให้ตรงกับความจริง —
+// เรียกตอนเชื่อม Firebase สำเร็จ (จาก INIT ท้ายไฟล์) ค่าเริ่มต้นใน HTML คือสถานะ "ยังไม่เชื่อม"
+// อยู่แล้ว จึงไม่ต้องเรียกตอนล้มเหลว (ปล่อยเป็นค่าเริ่มต้นนั้นไปเลย)
+function setConnStatusBadge(connected){
+  const btn = document.getElementById('btnConnStatus');
+  if(!btn) return;
+  if(connected){
+    btn.className = 'chip ok';
+    btn.innerHTML = '☁️<span class="chip-label"> เชื่อมฐานข้อมูลกลาง</span>';
+    btn.title = 'ข้อมูลกำลัง sync กับฐานข้อมูลกลาง ทุกเครื่องที่เชื่อมได้เห็นตรงกัน';
+  }else{
+    btn.className = 'chip';
+    btn.innerHTML = '💾<span class="chip-label"> ออฟไลน์</span>';
+    btn.title = 'ยังไม่ได้เชื่อมฐานข้อมูลกลาง ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ก่อน แล้ว sync ให้เองอัตโนมัติตอนเชื่อมต่อได้';
+  }
+}
+
+// เข้าสู่ระบบแบบไม่ระบุตัวตน (Anonymous Auth) — ทุกคนที่เปิดเว็บได้สิทธิ์อ่าน/เขียนอัตโนมัติ
+// โดยไม่ต้องมีหน้า login เพิ่ม (เหมือนเดิมทุกประการจากมุมมองผู้ใช้) ตัวตนจริงของผู้กรอกยังคง
+// อิงจาก state.inspectorName ที่เลือกเอง ไม่ใช่ auth นี้ — auth นี้มีไว้แค่กัน bot/สคริปต์
+// แปลกหน้าที่ไม่ได้รันผ่านแอปนี้จริง ๆ ตาม Security Rules ที่ตั้งไว้ (ต้อง auth != null ถึง
+// จะอ่าน/เขียนได้ — ดูรายละเอียดใน README.md หัวข้อ Firebase)
+// return: Promise ที่ resolve เมื่อ sign-in สำเร็จครั้งแรก, reject ถ้า sign-in ไม่สำเร็จหรือยัง
+// ไม่ได้โหลด Firebase SDK เลย (ใช้รอก่อนเริ่ม startCloudSync — ดู ZONE: INIT ท้ายไฟล์)
+function initCloudAuth(){
+  if(!fbAuth || !authApi) return Promise.reject(new Error('Firebase SDK ยังไม่พร้อม (initFirebaseSdk ไม่สำเร็จ)'));
+  return new Promise((resolve, reject) => {
+    authApi.onAuthStateChanged(fbAuth, (user) => {
+      if(user){ cloudReady = true; resolve(user); }
+    });
+    authApi.signInAnonymously(fbAuth).catch(err => {
+      console.error('Firebase anonymous sign-in ไม่สำเร็จ:', err);
+      showToast('เชื่อมต่อฐานข้อมูลกลางไม่สำเร็จ (ยังบันทึกในเครื่องนี้ได้ตามปกติ)', 'error');
+      reject(err);
+    });
+  });
+}
+
+// ส่ง record ขึ้น Firestore (ใช้ id เดียวกับที่เก็บใน IndexedDB) — เรียกคู่กับ idbPut เสมอ
+// แยก photos ออกไปเก็บเป็นเอกสารย่อยทีละรูปใน subcollection แทนที่จะฝังในฟิลด์เดียว
+// เจตนาไม่ await ตอนเรียกจากจุดบันทึกฟอร์ม เพื่อไม่ให้ผู้ใช้ต้องรอเน็ตก่อนเห็นผลบันทึกสำเร็จ
+async function cloudPushRecord(record){
+  if(!cloudReady || !fbDb || !fsApi) return; // ยังไม่ signed-in หรือไม่มี Firebase เลย (เน็ตช้า/หลุด/ถูกบล็อก) ข้ามไปก่อน ไม่บล็อกผู้ใช้
+  try{
+    const { photos, ...fields } = record;
+    fields.photoCount = (photos || []).length;
+    await fsApi.setDoc(fsApi.doc(fbDb, 'records', record.id), fields);
+    if(photos && photos.length){
+      const batch = fsApi.writeBatch(fbDb);
+      photos.forEach((dataUrl, i) => {
+        batch.set(fsApi.doc(fbDb, 'records', record.id, 'photos', String(i)), { dataUrl, order: i });
+      });
+      await batch.commit();
+    }
+  }catch(err){
+    console.error('ส่งข้อมูลขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
+    // ไม่โชว์ toast รบกวนผู้ใช้ — ข้อมูลยังปลอดภัยอยู่ใน IndexedDB เครื่องนี้แล้ว (ถ้าเป็นเพราะ
+    // เน็ตหลุด Firestore SDK จะคิวไว้ส่งเองอัตโนมัติอยู่แล้วจาก offline persistence ด้านบน)
+  }
+}
+
+// ลบ record ออกจาก Firestore ทั้งเอกสารหลักและรูปย่อยทั้งหมดใน subcollection — เรียกคู่กับ
+// idbDelete เสมอ (ไม่ await ตอนเรียกจากปุ่มลบ ด้วยเหตุผลเดียวกับ cloudPushRecord)
+async function cloudDeleteRecord(id){
+  if(!cloudReady || !fbDb || !fsApi) return;
+  try{
+    const photosSnap = await fsApi.getDocs(fsApi.collection(fbDb, 'records', id, 'photos'));
+    const batch = fsApi.writeBatch(fbDb);
+    photosSnap.forEach(d => batch.delete(d.ref));
+    batch.delete(fsApi.doc(fbDb, 'records', id));
+    await batch.commit();
+  }catch(err){
+    console.error('ลบข้อมูลออกจากฐานข้อมูลกลางไม่สำเร็จ:', err);
+  }
+}
+
+// เอา record ที่ได้จาก Firestore (ยังไม่มี photos เพราะแยกเก็บไว้ต่างหาก) ไปดึงรูปจาก
+// subcollection มาประกอบร่างคืนให้หน้าตาเหมือน record ที่มาจาก IndexedDB เดิมทุกประการ
+// (มีฟิลด์ photos เป็น array ของ base64 string) ก่อนเอาไป idbPut ใส่เครื่องนี้ — ทำแบบนี้
+// เพื่อไม่ต้องแก้โค้ด render ใด ๆ เลยทั้งไฟล์ (renderHistoryTable, generateReportPdf ฯลฯ)
+async function cloudHydratePhotos(id, fields){
+  if(!fields.photoCount){ return { ...fields, id, photos: [] }; }
+  const snap = await fsApi.getDocs(fsApi.query(fsApi.collection(fbDb, 'records', id, 'photos'), fsApi.orderBy('order')));
+  const photos = snap.docs.map(d => d.data().dataUrl);
+  return { ...fields, id, photos };
+}
+
+// เริ่มฟัง Firestore แบบ real-time — พอมีใครบันทึก/ลบผลตรวจจากเครื่องไหนก็ตาม (รวมเครื่องนี้
+// เองด้วย) จะไหลมาที่นี่ แล้วเอาไปอัปเดต IndexedDB + หน้าจอเครื่องนี้ให้ตรงกันเสมอ เรียกครั้ง
+// เดียวตอน INIT หลัง sign-in สำเร็จ (ดู ZONE: INIT ท้ายไฟล์)
+function startCloudSync(){
+  if(!fbDb || !fsApi) return; // ไม่มี Firebase SDK เลย (โหลดไม่สำเร็จ) ข้ามการ sync ไปทั้งหมด
+  fsApi.onSnapshot(fsApi.collection(fbDb, 'records'), (snap) => {
+    let changed = false;
+    const work = snap.docChanges().map(async (change) => {
+      const id = change.doc.id;
+      if(change.type === 'removed'){
+        await idbDelete('records', id);
+        changed = true;
+        return;
+      }
+      const record = await cloudHydratePhotos(id, change.doc.data());
+      await idbPut('records', record);
+      changed = true;
+    });
+    Promise.all(work).then(() => { if(changed) refreshRecords(); })
+      .catch(err => console.error('sync ข้อมูลจากฐานข้อมูลกลางเข้าเครื่องนี้ผิดพลาด:', err));
+  }, (err) => {
+    console.error('ฟังการเปลี่ยนแปลงจากฐานข้อมูลกลางไม่สำเร็จ:', err);
+  });
+}
+
+// ย้ายผลตรวจเก่าที่มีอยู่ในเครื่องนี้ตั้งแต่ก่อนเปิดใช้ฐานข้อมูลกลาง ขึ้น Firestore ให้ครบ
+// ครั้งเดียว (เช็คด้วย localStorage flag กันทำซ้ำทุกครั้งที่เปิดแอป) กันผลตรวจเก่า ๆ ไม่ให้
+// หายไปจากสายตาเครื่องอื่น หลังจากนี้ทุกจุดตรวจใหม่จะขึ้น Firestore เองอัตโนมัติตอนบันทึกอยู่แล้ว
+const LS_CLOUD_BACKFILL_DONE = 'dutyCheck_cloudBackfillDone';
+async function backfillLocalRecordsToCloud(){
+  let done = false;
+  try{ done = localStorage.getItem(LS_CLOUD_BACKFILL_DONE) === '1'; }catch(e){}
+  if(done) return;
+  try{
+    const localRecords = await idbGetAll('records');
+    for(const rec of localRecords){ await cloudPushRecord(rec); }
+    localStorage.setItem(LS_CLOUD_BACKFILL_DONE, '1');
+  }catch(err){
+    console.error('ย้ายผลตรวจเก่าขึ้นฐานข้อมูลกลางไม่สำเร็จ (จะลองใหม่ครั้งหน้า):', err);
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Master data (ผู้ตรวจ/พื้นที่-โซน/ประเภทปัญหา/ฝ่าย-แผนก) บนฐานข้อมูลกลาง — เก็บรวม
+   ทั้งหมดเป็นเอกสารเดียว config/masterData (ต่างจาก records ที่แยกเอกสารต่อรายการ เพราะ
+   master data ทั้งชุดเล็กกว่า 1MB มาก และแก้ไม่บ่อย เก็บรวมเอกสารเดียวง่ายกว่า/ atomic กว่า)
+   แก้ไขได้จากหน้าตั้งค่าในแอป (ต้องใส่รหัสผ่านก่อน — ดู confirmMasterDataEdit ด้านล่าง) แทนที่
+   จะต้องให้ Dev แก้ data.js บน GitHub เหมือนเดิม — data.js ยังมีประโยชน์เป็น "ค่าเริ่มต้นสำรอง"
+   เผื่อเครื่องไหนไม่เคย sync กับฐานข้อมูลกลางได้เลย (ดู loadMaster ด้านบน)
+   ------------------------------------------------------------------------ */
+
+// ส่งสำเนา DBX.members/areas/zoneGroups/issueTypes/orgList ปัจจุบันทั้งหมดขึ้น Firestore
+// (ทับเอกสารเดิมทั้งฉบับ) — เรียกทุกครั้งหลังแก้ไขในหน้าตั้งค่า (เพิ่ม/ลบ) ผ่าน
+// pushMasterDataAfterEdit() ด้านล่าง ไม่ await ตอนเรียกจากปุ่มเพิ่ม/ลบ เพื่อไม่ให้ผู้ใช้ต้องรอเน็ต
+async function cloudPushMasterData(){
+  if(!cloudReady || !fbDb || !fsApi) return; // ยังไม่ signed-in หรือไม่มี Firebase เลย ข้ามไปก่อน — ข้อมูลยังอยู่ใน DBX/IndexedDB cache ของเครื่องนี้ตามปกติ
+  try{
+    await fsApi.setDoc(fsApi.doc(fbDb, 'config', 'masterData'), {
+      members: DBX.members, areas: DBX.areas, zoneGroups: DBX.zoneGroups,
+      issueTypes: DBX.issueTypes, orgList: DBX.orgList,
+      updatedAt: new Date().toISOString(),
+    });
+  }catch(err){
+    console.error('ส่งรายชื่อ/พื้นที่ส่วนกลางขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
+  }
+}
+
+// เรียกหลังแก้ DBX.members/areas/issueTypes ในหน้าตั้งค่าทุกครั้ง (เพิ่ม/ลบ) — บันทึกลง
+// IndexedDB cache ของเครื่องนี้ทันที (เห็นผลทันทีแม้เน็ตหลุด) แล้วค่อยยิงขึ้นฐานข้อมูลกลาง
+function pushMasterDataAfterEdit(){
+  idbPutMasterDataCache({ members: DBX.members, areas: DBX.areas, zoneGroups: DBX.zoneGroups, issueTypes: DBX.issueTypes, orgList: DBX.orgList });
+  cloudPushMasterData();
+}
+
+// เริ่มฟัง Firestore แบบ real-time สำหรับ master data — พอมีใครแก้รายชื่อ/พื้นที่/ประเภทปัญหา
+// จากเครื่องไหนก็ตาม (รวมเครื่องนี้เองด้วย) จะไหลมาที่นี่แล้วอัปเดต DBX + cache + หน้าจอให้ตรงกัน
+// เรียกครั้งเดียวตอน INIT หลัง sign-in สำเร็จ (ดู ZONE: INIT ท้ายไฟล์) — ใช้ collection('config')
+// แทนการฟังเอกสารเดี่ยวตรง ๆ เพื่อใช้กลไก onSnapshot ชุดเดียวกับ records (รองรับ document
+// เดียวในคอลเลกชันนี้ก็เพียงพอ ไม่ต้องเพิ่ม API ใหม่)
+function startMasterDataCloudSync(){
+  if(!fbDb || !fsApi) return; // ไม่มี Firebase SDK เลย ข้ามการ sync ไปทั้งหมด
+  fsApi.onSnapshot(fsApi.collection(fbDb, 'config'), (snap) => {
+    snap.docChanges().forEach(change => {
+      if(change.doc.id !== 'masterData' || change.type === 'removed') return;
+      const data = change.doc.data();
+      DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
+      DBX.areas = Array.isArray(data.areas) ? data.areas : [];
+      DBX.zoneGroups = Array.isArray(data.zoneGroups) ? data.zoneGroups : [];
+      DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
+      DBX.orgList = Array.isArray(data.orgList) ? data.orgList.slice() : [];
+      idbPutMasterDataCache({ members: DBX.members, areas: DBX.areas, zoneGroups: DBX.zoneGroups, issueTypes: DBX.issueTypes, orgList: DBX.orgList });
+      renderStartScreen(); renderMemberSettings(); renderAreaSettings();
+      renderIssueTypeOptions(); renderIssueTypeSettings(); refreshOrgList();
+      renderLocationsGrid(); renderHistoryFilters();
+    });
+  }, (err) => {
+    console.error('ฟังการเปลี่ยนแปลงรายชื่อ/พื้นที่ส่วนกลางไม่สำเร็จ:', err);
+  });
+}
+
+// ถ้าฐานข้อมูลกลางยังไม่เคยมี master data เลย (เพิ่งตั้ง Firebase ใหม่ครั้งแรก) ให้เอาข้อมูลที่
+// กำลังใช้อยู่ตอนนี้ (มาจาก data.js เพราะยังไม่เคย sync) ขึ้นไปตั้งต้นให้อัตโนมัติครั้งเดียว กัน
+// ต้องมานั่งพิมพ์รายชื่อ/พื้นที่ทั้งหมดใหม่ผ่านหน้าตั้งค่าเอง — เช็คจากฐานข้อมูลจริงทุกครั้ง (ไม่ใช้
+// localStorage flag เหมือน backfill ผลตรวจ) เพราะเป็นสถานะของฐานข้อมูลเอง ไม่ใช่ของเครื่องใดเครื่องหนึ่ง
+async function seedMasterDataToCloudIfEmpty(){
+  if(!fbDb || !fsApi) return;
+  try{
+    const snap = await fsApi.getDocs(fsApi.collection(fbDb, 'config'));
+    const exists = snap.docs.some(d => d.id === 'masterData');
+    if(exists) return;
+    await cloudPushMasterData();
+  }catch(err){
+    console.error('ตั้งต้นรายชื่อ/พื้นที่เริ่มต้นขึ้นฐานข้อมูลกลางไม่สำเร็จ (จะลองใหม่ครั้งหน้า):', err);
+  }
+}
+
+// รหัสผ่านสำหรับปลดล็อกการแก้ไขรายชื่อ/พื้นที่-โซน/ประเภทปัญหาในฐานข้อมูลกลาง (มีผลกับทุกคน
+// ทันที) — ใช้รหัสเดียวกับโหมดทดสอบ (admin123) กันต้องจำหลายรหัส ปลดล็อกแล้วใช้ได้ตลอดจนกว่า
+// จะรีโหลดหน้า (ไม่เก็บถาวรใน localStorage เหมือนโหมดทดสอบ เพราะผลกระทบสูงกว่ามาก ควรถามใหม่
+// ทุกครั้งที่เปิดแอปรอบใหม่)
+const MASTER_DATA_ADMIN_PASSWORD = 'admin123';
+let masterDataEditUnlocked = false;
+// เรียกก่อนเพิ่ม/ลบรายชื่อ/พื้นที่/ประเภทปัญหาทุกครั้ง — ถ้ายังไม่เคยปลดล็อกในรอบเปิดแอปนี้
+// จะถาม password ก่อน (ผ่านครั้งเดียวพอ ใช้ได้ตลอดจนกว่าจะรีโหลดหน้า)
+// return: true ถ้าแก้ไขได้ (ปลดล็อกแล้ว), false ถ้ายกเลิก/รหัสผิด (ห้ามแก้ไข)
+function confirmMasterDataEdit(){
+  if(masterDataEditUnlocked) return true;
+  const pw = prompt('ใส่รหัสผ่านเพื่อแก้ไขรายชื่อ/พื้นที่ส่วนกลาง (มีผลกับทุกคนทันที):');
+  if(pw === null) return false;
+  if(pw !== MASTER_DATA_ADMIN_PASSWORD){ showToast('รหัสผ่านไม่ถูกต้อง', 'error'); return false; }
+  masterDataEditUnlocked = true;
+  showToast('ปลดล็อกแก้ไขรายชื่อ/พื้นที่ส่วนกลางแล้ว (จนกว่าจะรีโหลดหน้า)', 'success');
+  return true;
 }
 
 /* ======================================================================
@@ -1361,24 +1747,31 @@ function fmtCreatedAt(r){
 }
 
 /* ======================================================================
-   ZONE: โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js ส่วนกลาง — ทุกคนเห็นเหมือนกัน)
-   แก้ไขจริงต้องให้ Dev แก้ไฟล์ data.js ใน GitHub repo แล้ว commit/push (ไม่ต้องเชื่อมระบบอื่นเพิ่ม)
-   data.js เป็นไฟล์ <script> ธรรมดา โหลดมาก่อนหน้านี้แล้ว จะตั้งค่า window.MASTER_DATA ไว้ให้
+   ZONE: โหลดรายชื่อผู้ตรวจ/พื้นที่ (master data — ทุกคนเห็นเหมือนกัน)
+   ตั้งแต่มีฐานข้อมูลกลาง (Firestore) แล้ว ข้อมูลชุดนี้มี 2 ชั้นเรียงลำดับความสำคัญ:
+     1) สำเนาล่าสุดที่เคย sync ไว้ใน IndexedDB เครื่องนี้ (masterDataCache) — ถ้ามี ใช้อันนี้
+        ก่อนเสมอ เพราะเป็น "ความจริงล่าสุด" ที่มาจากฐานข้อมูลกลาง (แก้โดยใครก็ได้ที่มีรหัสผ่าน
+        ผ่านหน้าตั้งค่าในแอป ไม่ต้องพึ่ง Dev/GitHub อีกต่อไป)
+     2) window.MASTER_DATA จาก data.js — ใช้เป็น "ค่าเริ่มต้นสำรอง" เฉพาะตอนที่เครื่องนี้ยัง
+        ไม่เคย sync กับฐานข้อมูลกลางสำเร็จเลยสักครั้ง (เช่นเปิดแอปครั้งแรกสุด หรือเน็ตหลุด/
+        Firebase ถูกบล็อกตั้งแต่แรกและไม่เคยต่อได้เลย)
+   พอเชื่อมฐานข้อมูลกลางได้ (ดู startMasterDataCloudSync ใน ZONE: CLOUD SYNC) จะ sync ของจริง
+   มาทับ cache นี้ให้เองอัตโนมัติแบบ real-time เหมือนกับผลตรวจ (records) ทุกประการ
    ====================================================================== */
-// อ่าน window.MASTER_DATA (ตั้งค่าไว้โดย data.js) เข้ามาเก็บใน DBX.members/areas/issueTypes
-// นี่คือจุดเดียวที่แอปนี้ "ดึงข้อมูลส่วนกลาง" — ไม่มีการ fetch เน็ตใด ๆ ทั้งสิ้น
-// return: true ถ้าโหลดสำเร็จ, false ถ้าไม่พบ data.js หรือรูปแบบข้อมูลผิด (จะ toast แจ้ง error ให้)
-function loadMaster(){
+// อ่าน master data จาก cache ใน IndexedDB ก่อน (ถ้ามี) ไม่งั้น fallback ไป window.MASTER_DATA
+// (ตั้งค่าไว้โดย data.js) เข้ามาเก็บใน DBX.members/areas/zoneGroups/issueTypes/orgList
+// return: true ถ้าโหลดสำเร็จ, false ถ้าไม่พบข้อมูลเลยทั้ง 2 ชั้น (จะ toast แจ้ง error ให้)
+async function loadMaster(){
   try{
-    const data = window.MASTER_DATA;
-    if(!data) throw new Error('ไม่พบ window.MASTER_DATA — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
+    const cached = await idbGetMasterDataCache();
+    const data = cached || window.MASTER_DATA;
+    if(!data) throw new Error('ไม่พบข้อมูลผู้ตรวจ/พื้นที่ทั้งจากฐานข้อมูลกลางที่เคย sync ไว้ และจากไฟล์ data.js — ตรวจสอบว่ามีไฟล์ data.js อยู่ข้าง ๆ index.html และโหลดสำเร็จหรือไม่');
     DBX.members = (Array.isArray(data.members) ? data.members : []).sort((a,b) => a.name.localeCompare(b.name));
     DBX.areas = Array.isArray(data.areas) ? data.areas : [];
     // zoneGroups (ชื่อ/คำอธิบายของแต่ละ ZoneN เช่น "Pilot Plant") ใช้แสดงเป็นบรรทัดที่ 2 ใต้ชื่อ
-    // โซนบนปุ่มหน้าพื้นที่ตรวจเท่านั้น — ไม่บังคับต้องมีใน data.js (เก่า ๆ ที่ยังไม่อัปเดตจะแค่ไม่มี
-    // บรรทัดที่ 2 โชว์ ไม่ error)
+    // โซนบนปุ่มหน้าพื้นที่ตรวจเท่านั้น — ไม่บังคับต้องมี (ถ้าไม่มีจะแค่ไม่มีบรรทัดที่ 2 โชว์ ไม่ error)
     DBX.zoneGroups = Array.isArray(data.zoneGroups) ? data.zoneGroups : [];
-    // issueTypes เป็นของใหม่ — ถ้า data.js ยังไม่ได้อัปเดตให้มีรายการนี้ ใช้ค่าเริ่มต้นไปก่อน
+    // issueTypes — ถ้าไม่มีในข้อมูลที่โหลดมา ใช้ค่าเริ่มต้นไปก่อน
     DBX.issueTypes = (Array.isArray(data.issueTypes) && data.issueTypes.length) ? data.issueTypes.slice() : DEFAULT_ISSUE_TYPES.slice();
     // orgList (ฝ่าย/แผนกทั้งบริษัท) — ใช้เป็น dropdown ในฟอร์ม "เบิกของสโตร์"/"ขนย้ายเครื่องจักร"
     // เท่านั้น ไม่เกี่ยวกับ department ของผู้ตรวจข้างบน (คนละรายการกันโดยตั้งใจ)
@@ -1387,19 +1780,19 @@ function loadMaster(){
   }catch(e){
     console.error('loadMaster failed', e);
     DBX.members = []; DBX.areas = []; DBX.zoneGroups = []; DBX.issueTypes = DEFAULT_ISSUE_TYPES.slice(); DBX.orgList = [];
-    showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ (data.js) ไม่สำเร็จ: ' + e.message, 'error');
+    showToast('โหลดรายชื่อผู้ตรวจ/พื้นที่ไม่สำเร็จ: ' + e.message, 'error');
     return false;
   }
 }
 
 /* ======================================================================
-   ZONE: โหลด/รีเฟรชข้อมูลตอนเปิดแอป — รวมทั้ง 2 แหล่ง (data.js + IndexedDB)
+   ZONE: โหลด/รีเฟรชข้อมูลตอนเปิดแอป — รวมทั้งผลตรวจ (IndexedDB) + master data
+   (IndexedDB cache หรือ data.js — ดู loadMaster ด้านบน)
    ====================================================================== */
-// โหลดข้อมูลครั้งแรกตอนเปิดแอป: ผลตรวจจาก IndexedDB + master data จาก data.js
+// โหลดข้อมูลครั้งแรกตอนเปิดแอป: ผลตรวจจาก IndexedDB + master data (cache/data.js)
 // เรียกครั้งเดียวตอน INIT ท้ายไฟล์ (ดู ZONE: INIT ด้านล่างสุด)
 async function loadAll(){
-  const [records] = await Promise.all([idbGetAll('records')]);
-  loadMaster();
+  const [records] = await Promise.all([idbGetAll('records'), loadMaster()]);
   DBX.records = records.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
 }
 // เรียกหลังแก้ DBX.members (เช่นเพิ่ม/ลบผู้ตรวจชั่วคราวในหน้าตั้งค่า) — เรียงชื่อใหม่
@@ -1711,6 +2104,7 @@ async function submitInspectionForm(){
       createdAt: existing ? (existing.createdAt || new Date().toISOString()) : new Date().toISOString(),
     };
     await idbPut('records', record);
+    cloudPushRecord(record); // ยิงขึ้น Firestore แบบไม่ต้องรอ (fire-and-forget) ไม่บล็อก UI
     showToast('บันทึกข้อมูลสำเร็จแล้ว', 'success');
     hideModal('modalForm');
     state.editRecordId = null;
@@ -1791,7 +2185,7 @@ function renderEventLogList(){
   wrap.querySelectorAll('.del').forEach(b => {
     b.onclick = async () => {
       if(!confirm('ลบรายการนี้ใช่หรือไม่?')) return;
-      try{ await idbDelete('records', b.dataset.id); await refreshRecords(); renderEventLogList(); }
+      try{ await idbDelete('records', b.dataset.id); cloudDeleteRecord(b.dataset.id); await refreshRecords(); renderEventLogList(); }
       catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
     };
   });
@@ -1972,6 +2366,7 @@ async function submitEventLogForm(){
     }
 
     await idbPut('records', record);
+    cloudPushRecord(record); // ยิงขึ้น Firestore แบบไม่ต้องรอ (fire-and-forget) ไม่บล็อก UI
     showToast('บันทึกข้อมูลสำเร็จแล้ว', 'success');
     await refreshRecords();
     state.eventEditId = null;
@@ -2097,7 +2492,7 @@ function renderHistoryTable(){
   tbody.querySelectorAll('.del').forEach(b => {
     b.onclick = async () => {
       if(!confirm('ลบรายการนี้ใช่หรือไม่?')) return;
-      try{ await idbDelete('records', b.dataset.id); await refreshRecords(); }
+      try{ await idbDelete('records', b.dataset.id); cloudDeleteRecord(b.dataset.id); await refreshRecords(); }
       catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
     };
   });
@@ -2188,15 +2583,20 @@ function exportMasterJson(){
   downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }), 'master-data-for-dev.json');
   showToast('ดาวน์โหลดไฟล์แล้ว — ส่งไฟล์นี้ให้ Dev ใส่ใน data.js (window.MASTER_DATA) แล้ว commit ขึ้น GitHub', 'success');
 }
-// ลบผลตรวจ+รูปทั้งหมดใน IndexedDB ของเครื่องนี้ทิ้งถาวร (หลังยืนยัน) — ไม่กระทบ
-// data.js หรือเครื่องอื่นเลย เพราะผลตรวจเป็นข้อมูล local-only ต่อเครื่องอยู่แล้ว
+// ลบผลตรวจ+รูปทั้งหมดใน IndexedDB ของเครื่องนี้ (หลังยืนยัน) — ไม่กระทบ data.js หรือรายชื่อ/
+// พื้นที่ส่วนกลาง แต่ตั้งแต่มีฐานข้อมูลกลาง (Firestore) แล้ว ปุ่มนี้ "ไม่ได้ลบถาวรจริง" อีก
+// ต่อไปเหมือนตอนออฟไลน์อย่างเดียว: ถ้าเน็ตยังต่อกับฐานข้อมูลกลางอยู่ พอรีโหลดหน้าเว็บครั้ง
+// ถัดไป (หรือแม้แต่ทันทีที่ sync กลับมาทำงาน) ข้อมูลจะถูกดึงจาก Firestore กลับมาใส่เครื่องนี้
+// เหมือนเดิม เพราะฐานข้อมูลกลางยังมีสำเนาอยู่ — ปุ่มนี้จึงเหมาะกับ "เคลียร์แคชในเครื่องนี้
+// ชั่วคราว" มากกว่า "ลบข้อมูลทิ้งถาวร" ถ้าต้องการลบทิ้งจริงทั้งองค์กรต้องไปลบที่ Firebase
+// Console โดยตรง (มีผลกับทุกเครื่อง ควรระวังเป็นพิเศษ)
 async function clearAllData(){
-  if(!confirm('ลบผลตรวจ/รูปทั้งหมดในเครื่องนี้ใช่หรือไม่? (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง) การลบนี้กู้คืนไม่ได้')) return;
+  if(!confirm('ล้างผลตรวจ/รูปทั้งหมดที่แคชไว้ในเครื่องนี้ใช่หรือไม่? (ไม่กระทบรายชื่อ/พื้นที่ส่วนกลาง)\n\nหมายเหตุ: ถ้าเครื่องนี้ยังเชื่อมฐานข้อมูลกลางอยู่ ข้อมูลจะถูกดึงกลับมาใหม่อัตโนมัติในครั้งถัดไปที่เปิดแอป (ไม่ได้ลบทิ้งถาวรจากฐานข้อมูลกลาง)')) return;
   try{
     await idbClearRecords();
     DBX.records = [];
     renderLocationsGrid(); renderHistoryTable();
-    showToast('ลบผลตรวจทั้งหมดในเครื่องนี้แล้ว', 'success');
+    showToast('ล้างแคชผลตรวจในเครื่องนี้แล้ว', 'success');
   }catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
 }
 
@@ -2423,13 +2823,14 @@ async function handleShareEmail(){
 }
 
 /* ======================================================================
-   ZONE: SETTINGS - รายการที่แก้ไขจริงต้องผ่าน data.js (ผู้ตรวจ / พื้นที่-โซน /
-   ประเภทปัญหา) — ทั้ง 3 หน้านี้มีโครงเหมือนกันทุกจุด (วาด list + ปุ่มลบพร้อม
-   ยืนยัน + เพิ่มรายการชั่วคราว) จึงรวม "วาด list + ลบ" เป็นฟังก์ชันกลางตัวเดียว
+   ZONE: SETTINGS - แก้ไขรายชื่อผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา — sync ขึ้น
+   ฐานข้อมูลกลางทันที (มีผลกับทุกคน) ต้องใส่รหัสผ่านก่อนแก้ (ดู confirmMasterDataEdit
+   ใน ZONE: CLOUD SYNC) — ทั้ง 3 หน้านี้มีโครงเหมือนกันทุกจุด (วาด list + ปุ่มลบพร้อม
+   ยืนยัน + เพิ่มรายการ) จึงรวม "วาด list + ลบ" เป็นฟังก์ชันกลางตัวเดียว
    คือ renderSettingsList แล้วให้แต่ละหน้าเรียกพร้อมส่ง config ของตัวเองเข้าไป
    ====================================================================== */
-// วาด list-row ทั่วไปในหน้าตั้งค่า พร้อมปุ่มลบ (มี confirm ก่อนลบเสมอ) — ใช้ร่วมกัน
-// 3 จุด: ผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา แทนที่จะเขียนโค้ดวาด+ลบซ้ำทั้ง 3 ที่
+// วาด list-row ทั่วไปในหน้าตั้งค่า พร้อมปุ่มลบ (ต้องผ่านรหัสผ่าน + confirm ก่อนลบเสมอ) —
+// ใช้ร่วมกัน 3 จุด: ผู้ตรวจ / พื้นที่-โซน / ประเภทปัญหา แทนที่จะเขียนโค้ดวาด+ลบซ้ำทั้ง 3 ที่
 //   wrapId          id ของ div ที่จะใส่ผลลัพธ์ (เช่น 'memberList')
 //   items           รายการที่จะแสดง (เรียงลำดับมาก่อนหน้านี้แล้วจากผู้เรียก)
 //   emptyText       ข้อความตอนยังไม่มีรายการเลย
@@ -2437,7 +2838,7 @@ async function handleShareEmail(){
 //   getLine2        (item) => ข้อความบรรทัดรอง (สีเทา) หรือ null/undefined ถ้าไม่ต้องการ
 //   getKey          (item) => ค่าที่ใช้ระบุตัวรายการนั้น (เก็บใน data-key ของปุ่มลบ)
 //   confirmMsg      ข้อความยืนยันก่อนลบ (เหมือนกันทั้ง 3 หน้า ต่างแค่คำนามของแต่ละอัน)
-//   onConfirmDelete (key) => แก้ DBX ลบรายการนั้นออก แล้วเรียก refresh ของหน้านั้นต่อ
+//   onConfirmDelete (key) => แก้ DBX ลบรายการนั้นออก แล้วเรียก refresh + sync ขึ้นฐานข้อมูลกลาง
 function renderSettingsList(wrapId, items, { emptyText, getLine1, getLine2, getKey, confirmMsg, onConfirmDelete }){
   const wrap = document.getElementById(wrapId);
   if(!items.length){ wrap.innerHTML = `<div class="empty-hint">${emptyText}</div>`; return; }
@@ -2447,6 +2848,7 @@ function renderSettingsList(wrapId, items, { emptyText, getLine1, getLine2, getK
   }).join('');
   wrap.querySelectorAll('.del').forEach(b => {
     b.onclick = () => {
+      if(!confirmMasterDataEdit()) return;
       if(!confirm(confirmMsg)) return;
       onConfirmDelete(b.dataset.key);
     };
@@ -2461,18 +2863,20 @@ function renderMemberSettings(){
     emptyText: 'ยังไม่มีรายชื่อผู้ตรวจ',
     getLine1: m => m.name,
     getKey: m => m.id,
-    confirmMsg: 'ลบผู้ตรวจคนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
-    onConfirmDelete: (id) => { DBX.members = DBX.members.filter(m => m.id !== id); refreshMembers(); },
+    confirmMsg: 'ลบผู้ตรวจคนนี้ออกจากฐานข้อมูลกลางใช่หรือไม่? (มีผลกับทุกคนทันที)',
+    onConfirmDelete: (id) => { DBX.members = DBX.members.filter(m => m.id !== id); refreshMembers(); pushMasterDataAfterEdit(); },
   });
 }
-// เพิ่มผู้ตรวจชั่วคราว (แค่เครื่องนี้ หายเมื่อรีเฟรช) จากฟอร์มในหน้าตั้งค่า
+// เพิ่มผู้ตรวจ (ต้องผ่านรหัสผ่านก่อน) — sync ขึ้นฐานข้อมูลกลางทันที ทุกคนเห็นเลย
 function addMember(){
+  if(!confirmMasterDataEdit()) return;
   const name = document.getElementById('newMemberName').value.trim();
   if(!name){ showToast('กรุณากรอกชื่อ', 'error'); return; }
   DBX.members.push({ id: uid(), name });
   document.getElementById('newMemberName').value = '';
-  showToast('เพิ่มผู้ตรวจแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  showToast('เพิ่มผู้ตรวจแล้ว กำลังซิงค์ขึ้นฐานข้อมูลกลาง...', 'success');
   refreshMembers();
+  pushMasterDataAfterEdit();
 }
 
 /* ---- พื้นที่ / โซน (Areas) ---- */
@@ -2484,23 +2888,26 @@ function renderAreaSettings(){
     getLine1: a => a.location,
     getLine2: a => a.zone,
     getKey: a => a.id,
-    confirmMsg: 'ลบพื้นที่/โซนนี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
-    onConfirmDelete: (id) => { DBX.areas = DBX.areas.filter(a => a.id !== id); refreshAreas(); },
+    confirmMsg: 'ลบพื้นที่/โซนนี้ออกจากฐานข้อมูลกลางใช่หรือไม่? (มีผลกับทุกคนทันที)',
+    onConfirmDelete: (id) => { DBX.areas = DBX.areas.filter(a => a.id !== id); refreshAreas(); pushMasterDataAfterEdit(); },
   });
 }
-// เพิ่มพื้นที่/โซนชั่วคราว — order คำนวณจากจำนวนโซนที่มีอยู่แล้วของพื้นที่นั้น (ต่อท้ายลำดับ)
+// เพิ่มพื้นที่/โซน (ต้องผ่านรหัสผ่านก่อน) — order คำนวณจากจำนวนโซนที่มีอยู่แล้วของพื้นที่นั้น
+// (ต่อท้ายลำดับ) แล้ว sync ขึ้นฐานข้อมูลกลางทันที
 function addArea(){
+  if(!confirmMasterDataEdit()) return;
   const location = document.getElementById('newAreaLocation').value.trim();
   const zone = document.getElementById('newAreaZone').value.trim();
   if(!location || !zone){ showToast('กรุณากรอกพื้นที่และโซนให้ครบ', 'error'); return; }
   const order = DBX.areas.filter(a => a.location === location).length;
   DBX.areas.push({ id: uid(), location, zone, order });
   document.getElementById('newAreaZone').value = '';
-  showToast('เพิ่มพื้นที่/โซนแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  showToast('เพิ่มพื้นที่/โซนแล้ว กำลังซิงค์ขึ้นฐานข้อมูลกลาง...', 'success');
   refreshAreas();
+  pushMasterDataAfterEdit();
 }
 
-/* ---- ประเภทปัญหา (Issue Types) — มาจาก data.js เช่นเดียวกับผู้ตรวจ/พื้นที่ ---- */
+/* ---- ประเภทปัญหา (Issue Types) ---- */
 // เติม dropdown "ประเภทปัญหา" ในฟอร์มตรวจ จาก DBX.issueTypes (คงค่าที่เลือกไว้เดิมถ้ายังมีอยู่)
 function renderIssueTypeOptions(){
   const sel = document.getElementById('ddIssueType');
@@ -2515,19 +2922,21 @@ function renderIssueTypeSettings(){
     emptyText: 'ยังไม่มีประเภทปัญหา',
     getLine1: t => t,
     getKey: t => t,
-    confirmMsg: 'ลบประเภทปัญหานี้ออกจากรายการชั่วคราวในเครื่องนี้ใช่หรือไม่?\n(การลบนี้แค่ในเครื่องนี้ — ต้องแจ้ง Dev แก้ไฟล์ data.js ถึงจะมีผลกับทุกคน)',
-    onConfirmDelete: (val) => { DBX.issueTypes = DBX.issueTypes.filter(t => t !== val); refreshIssueTypes(); },
+    confirmMsg: 'ลบประเภทปัญหานี้ออกจากฐานข้อมูลกลางใช่หรือไม่? (มีผลกับทุกคนทันที)',
+    onConfirmDelete: (val) => { DBX.issueTypes = DBX.issueTypes.filter(t => t !== val); refreshIssueTypes(); pushMasterDataAfterEdit(); },
   });
 }
-// เพิ่มประเภทปัญหาชั่วคราว (กันเพิ่มชื่อซ้ำของเดิม)
+// เพิ่มประเภทปัญหา (ต้องผ่านรหัสผ่านก่อน กันเพิ่มชื่อซ้ำของเดิม) — sync ขึ้นฐานข้อมูลกลางทันที
 function addIssueType(){
+  if(!confirmMasterDataEdit()) return;
   const value = document.getElementById('newIssueType').value.trim();
   if(!value){ showToast('กรุณากรอกชื่อประเภทปัญหา', 'error'); return; }
   if(DBX.issueTypes.includes(value)){ showToast('มีประเภทปัญหานี้อยู่แล้ว', 'error'); return; }
   DBX.issueTypes.push(value);
   document.getElementById('newIssueType').value = '';
-  showToast('เพิ่มประเภทปัญหาแล้ว (ชั่วคราวเฉพาะเครื่องนี้ — แจ้ง Dev แก้ไฟล์ data.js เพื่อให้ทุกคนเห็น)', 'success');
+  showToast('เพิ่มประเภทปัญหาแล้ว กำลังซิงค์ขึ้นฐานข้อมูลกลาง...', 'success');
   refreshIssueTypes();
+  pushMasterDataAfterEdit();
 }
 
 /* ======================================================================
@@ -2592,6 +3001,7 @@ function wireEvents(){
   document.querySelectorAll('#tabbar .tab').forEach(t => t.addEventListener('click', () => switchMainTab(t.dataset.tab)));
   document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', () => hideModal(b.dataset.close)));
   document.getElementById('btnSettings').addEventListener('click', () => { showModal('modalSettings'); switchSettingsSubtab('members'); });
+  document.getElementById('btnHelp').addEventListener('click', () => showModal('modalHelp'));
   document.querySelectorAll('.subtabs button').forEach(b => b.addEventListener('click', () => switchSettingsSubtab(b.dataset.subtab)));
 
   document.getElementById('btnAddMember').addEventListener('click', addMember);
@@ -2692,6 +3102,21 @@ loadAll().then(() => {
 }).catch(e => {
   console.error(e);
   showToast('โหลดข้อมูลจากเครื่องไม่สำเร็จ: ' + e.message, 'error');
+});
+// เชื่อมฐานข้อมูลกลาง (Firebase) แยกสายกับ loadAll() ด้านบน ไม่บล็อกการเปิดหน้าจอครั้งแรก —
+// ถ้าเน็ตช้า/หลุด/ถูกบล็อก (โหลด SDK จาก gstatic.com ไม่สำเร็จ) ผู้ใช้ยังใช้แอปแบบออฟไลน์ได้
+// ตามปกติทุกฟีเจอร์ พอเชื่อมสำเร็จเมื่อไหร่ค่อยเริ่ม sync
+initFirebaseSdk().then((ok) => {
+  if(!ok) return; // โหลด Firebase SDK ไม่สำเร็จ — ใช้แอปแบบออฟไลน์ล้วน ๆ ต่อไปได้ปกติ
+  return initCloudAuth().then(() => {
+    setConnStatusBadge(true);
+    startCloudSync();
+    backfillLocalRecordsToCloud();
+    startMasterDataCloudSync();
+    seedMasterDataToCloudIfEmpty();
+  });
+}).catch(e => {
+  console.error('เชื่อมต่อฐานข้อมูลกลางไม่สำเร็จ (แอปยังใช้งานแบบออฟไลน์ได้ปกติ):', e);
 });
 </script>
 </body>
