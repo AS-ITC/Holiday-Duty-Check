@@ -496,6 +496,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 .tag.warn{border-color:rgba(245,166,35,.55);color:var(--amber-ink);background:rgba(245,166,35,.1);}
 .dot.r{background:#fff;border:2px solid var(--amber-500);width:11px;height:11px;}
 .scene-legend{max-width:calc(100% - 200px);}
+
+.sync-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.5;}
+.sync-row span{color:var(--muted);flex:1;} .sync-row b{flex:1.2;text-align:right;color:var(--strong);font-weight:600;word-break:break-word;}
+.sync-row b.ok{color:var(--ok);} .sync-row b.bad{color:var(--coral-500);}
 </style>
 
 <body>
@@ -700,6 +704,20 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
      modal เดียวกัน (ไม่เปิด modal ซ้อน modal): eventLogListView (รายการที่มีอยู่ + ปุ่มเพิ่ม)
      และ eventLogFormView (ฟอร์มกรอก/แก้ไข 1 รายการ) — mirrors ลักษณะการสลับมุมมองของ
      modalZones/modalForm แต่รวบเป็น modal เดียวเพราะทั้งสองมุมมองเป็นเรื่องเดียวกัน ==== -->
+<!-- ==== modal สถานะการซิงก์ข้อมูล (กดป้ายสถานะมุมขวาบน) — ไว้เช็คว่าเครื่องนี้ส่ง/รับข้อมูลกับฐานข้อมูลกลางครบหรือไม่ ==== -->
+<div id="modalSync" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-head"><h3>สถานะการซิงก์ข้อมูล</h3><button class="modal-close" data-close="modalSync">✕</button></div>
+    <div class="modal-body">
+      <div id="syncBody"></div>
+      <div class="row btn-row" style="margin-top:14px;">
+        <button class="btn primary" id="btnSyncPush">ส่งข้อมูลที่ยังไม่ขึ้นฐานข้อมูลกลาง</button>
+        <button class="btn ghost" id="btnSyncPull">ดึงข้อมูลจากฐานข้อมูลกลางใหม่</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="modalEventLog" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-head"><h3 id="eventLogTitle">บันทึก</h3><button class="modal-close" data-close="modalEventLog">✕</button></div>
@@ -1626,6 +1644,9 @@ function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]');
 function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
+const APP_BUILD = '2026-10-01 11:21';
+const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
+function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
 async function flushPendingSync(){
   if(flushing || !cloudReady || !fbDb || !fsApi) return 0;
@@ -1645,6 +1666,31 @@ async function flushPendingSync(){
   }catch(err){ console.error('ส่งรายการค้างขึ้นฐานข้อมูลกลางไม่สำเร็จ (จะลองใหม่):', err); }
   flushing = false; return sent;
 }
+// ดึงรายการทั้งหมดจากฐานข้อมูลกลาง (เซิร์ฟเวอร์จริง) มารวมกับในเครื่อง — ใช้เมื่อสงสัยว่าไม่ได้รับข้อมูลจากเครื่องอื่น
+async function forcePullFromCloud(){
+  const snap = await fsApi.getDocs(fsApi.collection(fbDb, 'records'));
+  let n = 0;
+  for(const d of snap.docs){ const rec = await cloudHydratePhotos(d.id, d.data()); await idbPut('records', rec); n++; }
+  syncDiag.cloudIds = new Set(snap.docs.map(d => d.id)); syncDiag.snapAt = new Date().toLocaleTimeString('th-TH'); syncDiag.fromCache = snap.metadata.fromCache;
+  await refreshRecords();
+  return n;
+}
+async function renderSyncPanel(){
+  const local = await idbGetAll('records'), me = (state.inspectorName || '').trim();
+  const today = local.filter(r => r.checkDate === state.date), mine = today.filter(r => r.inspector === me);
+  const ids = syncDiag.cloudIds, missing = ids ? local.filter(r => !ids.has(r.id)) : null;
+  const pend = pendingGet(LS_PENDING_PUSH).length + pendingGet(LS_PENDING_DEL).length;
+  const row = (k, v, cls) => '<div class="sync-row"><span>' + k + '</span><b class="' + (cls || '') + '">' + v + '</b></div>';
+  document.getElementById('syncBody').innerHTML =
+    row('เวอร์ชันแอป', escapeHtml(APP_BUILD)) +
+    row('การเชื่อมต่อฐานข้อมูลกลาง', cloudReady ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อมต่อ', cloudReady ? 'ok' : 'bad') +
+    row('ผลตรวจในเครื่องนี้', local.length + ' รายการ (วันที่เลือก ' + today.length + ' · ของ ' + escapeHtml(me || 'ยังไม่เลือกชื่อ') + ' ' + mine.length + ')') +
+    row('ที่เครื่องนี้เห็นบนฐานข้อมูลกลาง', ids ? ids.size + ' รายการ (ล่าสุด ' + syncDiag.snapAt + (syncDiag.fromCache ? ' · จากแคชในเครื่อง' : ' · จากเซิร์ฟเวอร์') + ')' : 'ยังไม่ได้รับข้อมูล') +
+    row('อยู่ในเครื่องนี้แต่ยังไม่มีบนฐานข้อมูลกลาง', missing ? missing.length + ' รายการ' : '-', missing && missing.length ? 'bad' : 'ok') +
+    row('คิวรอส่ง', pend + ' รายการ', pend ? 'bad' : 'ok') +
+    row('ข้อผิดพลาดล่าสุด', syncDiag.lastError ? escapeHtml(syncDiag.lastError.where + ' (' + syncDiag.lastError.at + '): ' + syncDiag.lastError.msg) : 'ไม่มี', syncDiag.lastError ? 'bad' : 'ok');
+}
+async function openSyncPanel(){ showModal('modalSync'); await renderSyncPanel(); }
 // เทียบกับสิ่งที่อยู่บนฐานข้อมูลกลางจริง: ผลตรวจในเครื่อง (ย้อนหลัง 30 วัน) ที่ฐานข้อมูลกลางยังไม่มี → ส่งขึ้นไป
 // (เก็บกวาดผลตรวจที่เคยตกหล่นจากบั๊กเดิม) — เรียกจาก snapshot แรกที่มาจากเซิร์ฟเวอร์จริง
 let reconciled = false;
@@ -1679,7 +1725,7 @@ async function cloudPushRecord(record){
     await fsApi.setDoc(fsApi.doc(fbDb, 'records', record.id), fields);
     pendingRemove(LS_PENDING_PUSH, record.id);
   }catch(err){
-    console.error('ส่งข้อมูลขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
+    console.error('ส่งข้อมูลขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err); syncErr('ส่งขึ้น', err);
     // ไม่โชว์ toast รบกวนผู้ใช้ — ข้อมูลยังปลอดภัยอยู่ใน IndexedDB เครื่องนี้แล้ว (ถ้าเป็นเพราะ
     // เน็ตหลุด Firestore SDK จะคิวไว้ส่งเองอัตโนมัติอยู่แล้วจาก offline persistence ด้านบน)
   }
@@ -1732,11 +1778,12 @@ function startCloudSync(){
       changed = true;
     });
     const cloudIds = new Set(snap.docs.map(d => d.id));
+    syncDiag.cloudIds = cloudIds; syncDiag.snapAt = new Date().toLocaleTimeString('th-TH'); syncDiag.fromCache = snap.metadata.fromCache;
     const fromServer = !snap.metadata.fromCache;
     Promise.all(work).then(() => { if(changed) refreshRecords(); if(fromServer) reconcileLocalToCloud(cloudIds); })
       .catch(err => console.error('sync ข้อมูลจากฐานข้อมูลกลางเข้าเครื่องนี้ผิดพลาด:', err));
   }, (err) => {
-    console.error('ฟังการเปลี่ยนแปลงจากฐานข้อมูลกลางไม่สำเร็จ:', err);
+    console.error('ฟังการเปลี่ยนแปลงจากฐานข้อมูลกลางไม่สำเร็จ:', err); syncErr('รับจากฐานข้อมูลกลาง', err);
   });
 }
 
@@ -3280,13 +3327,18 @@ function switchSettingsSubtab(tab){
    "ผูกปุ่ม" ยังไม่ต้องรอข้อมูลพร้อม
    ====================================================================== */
 function wireEvents(){
-  // กดป้ายสถานะมุมขวาบน = ส่งรายการที่ค้างอยู่ขึ้นฐานข้อมูลกลางทันที (ใช้เช็คว่าข้อมูลในเครื่องนี้ขึ้นไปครบหรือยัง)
-  document.getElementById('btnConnStatus').addEventListener('click', async () => {
-    if(!cloudReady){ showToast('ยังไม่ได้เชื่อมฐานข้อมูลกลาง — ข้อมูลเก็บในเครื่องนี้ไว้ก่อน และจะส่งให้เองเมื่อเชื่อมต่อได้'); return; }
-    const before = pendingGet(LS_PENDING_PUSH).length + pendingGet(LS_PENDING_DEL).length;
-    await flushPendingSync();
-    const left = pendingGet(LS_PENDING_PUSH).length + pendingGet(LS_PENDING_DEL).length;
-    showToast(left ? 'ยังส่งไม่ครบ เหลือ ' + left + ' รายการ (จะลองใหม่ให้เอง)' : before ? 'ส่งรายการที่ค้างขึ้นฐานข้อมูลกลางครบแล้ว ' + before + ' รายการ' : 'ข้อมูลในเครื่องนี้ขึ้นฐานข้อมูลกลางครบแล้ว');
+  // กดป้ายสถานะมุมขวาบน = เปิดหน้าสถานะการซิงก์ (ดูว่าส่ง/รับข้อมูลกับฐานข้อมูลกลางครบหรือไม่ + ปุ่มส่ง/ดึงใหม่)
+  document.getElementById('btnConnStatus').addEventListener('click', openSyncPanel);
+  document.getElementById('btnSyncPush').addEventListener('click', async () => {
+    if(!cloudReady){ showToast('ยังไม่ได้เชื่อมฐานข้อมูลกลาง', 'error'); return; }
+    if(syncDiag.cloudIds){ (await idbGetAll('records')).forEach(r => { if(!syncDiag.cloudIds.has(r.id)) pendingAdd(LS_PENDING_PUSH, r.id); }); }
+    await flushPendingSync(); await renderSyncPanel();
+    showToast(pendingGet(LS_PENDING_PUSH).length ? 'ยังส่งไม่ครบ ดูข้อผิดพลาดล่าสุดในหน้านี้' : 'ส่งข้อมูลขึ้นฐานข้อมูลกลางครบแล้ว');
+  });
+  document.getElementById('btnSyncPull').addEventListener('click', async () => {
+    if(!cloudReady){ showToast('ยังไม่ได้เชื่อมฐานข้อมูลกลาง', 'error'); return; }
+    try{ const n = await forcePullFromCloud(); await renderSyncPanel(); showToast('ดึงข้อมูลจากฐานข้อมูลกลางแล้ว ' + n + ' รายการ'); }
+    catch(err){ syncErr('ดึงข้อมูล', err); await renderSyncPanel(); showToast('ดึงข้อมูลไม่สำเร็จ ดูรายละเอียดในหน้านี้', 'error'); }
   });
   document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; renderLocationsGrid(); }); // เปลี่ยนชื่อ → รายการ/ฉากเปลี่ยนเป็นของคนนั้นทันที
   setupAutocomplete(
