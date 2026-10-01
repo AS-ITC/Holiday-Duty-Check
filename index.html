@@ -504,6 +504,11 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 .chip.pending{background:rgba(245,166,35,.16);color:var(--amber-ink);border-color:rgba(245,166,35,.45);}
 .chip.pending .dot-live{background:var(--amber-500);animation:livePulse 1.2s infinite;}
 .chip .pc{font-size:11px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--amber-500);color:#2b1a00;display:inline-grid;place-items:center;}
+
+/* ปุ่มส่งออก/อีเมลที่ยังกดไม่ได้ (ตรวจไม่ครบ) — เป็นสีเทา แต่ยังกดเพื่อดูแจ้งเตือนได้ */
+.btn.gated{background:var(--line)!important;color:var(--faint)!important;border-color:transparent!important;opacity:.85;cursor:not-allowed;filter:none!important;}
+.gate-sum{font-size:14.5px;line-height:1.6;margin:0 0 8px;color:var(--strong);} .gate-sum b{color:var(--coral-500);}
+.gate-hint{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.55;} .gate-more{font-size:13px;color:var(--muted);margin:8px 0 0;}
 </style>
 
 <body>
@@ -626,7 +631,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
           <button class="btn secondary" id="btnHistPdf">📄 ออกรายงาน PDF</button>
           <button class="btn primary" id="btnHistEmail">📧 ส่ง PDF + Excel ทางอีเมล</button>
         </div>
-        <p id="testModeWarning" class="test-mode-warning hidden">🧪 โหมดทดสอบเปิดอยู่ — ปุ่มส่งอีเมลจะข้ามการเช็คตรวจครบทุกโซน (ปิดได้ที่ ⚙️ ตั้งค่า → ข้อมูล)</p>
+        <p id="testModeWarning" class="test-mode-warning hidden">🧪 โหมดทดสอบเปิดอยู่ — ปุ่มส่งออก Excel / ออกรายงาน PDF / ส่งอีเมล จะข้ามการเช็คตรวจครบทุกโซน (ปิดได้ที่ ⚙️ ตั้งค่า → ข้อมูล)</p>
       </div>
       <div class="table-wrap">
         <table id="histTable">
@@ -717,6 +722,20 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
       <div class="row btn-row" style="margin-top:14px;">
         <button class="btn primary" id="btnSyncPush">ส่งข้อมูลที่ยังไม่ขึ้นฐานข้อมูลกลาง</button>
         <button class="btn ghost" id="btnSyncPull">ดึงข้อมูลจากฐานข้อมูลกลางใหม่</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==== modal แจ้งเตือน "ยังตรวจไม่ครบ" ตอนกดปุ่มส่งออก Excel / ออกรายงาน PDF / ส่งอีเมล ==== -->
+<div id="modalGate" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-head"><h3>ยังตรวจไม่ครบ</h3><button class="modal-close" data-close="modalGate">✕</button></div>
+    <div class="modal-body">
+      <div id="gateBody"></div>
+      <div class="row btn-row" style="margin-top:14px;">
+        <button class="btn primary" id="btnGateBack">กลับไปตรวจให้ครบ</button>
+        <button class="btn ghost" data-close="modalGate">ปิด</button>
       </div>
     </div>
   </div>
@@ -1649,7 +1668,7 @@ function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]');
 function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} if(cloudReady) setConnStatusBadge(true); }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
-const APP_BUILD = '2026-10-01 12:00';
+const APP_BUILD = '2026-10-01 15:25';
 const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
 function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
@@ -2134,6 +2153,60 @@ function allZonesCompleted(){
   const incompleteLocs = distinctLocations().filter(loc => locationStatus(loc, true).state !== 'done'); // เช็คครบทั้งวัน (รวมทุกคน) ก่อนส่งรายงาน
   return { complete: incompleteLocs.length === 0, incompleteLocs };
 }
+// สรุปความครบของ "วันที่ที่ระบุ" (รวมงานของทุกผู้ตรวจ) — ใช้กับการล็อกปุ่มส่งออก Excel/PDF/อีเมล
+// return: { complete, missingLocs:[{loc,missing}], missingZones (จำนวนโซนใหญ่ที่ยังไม่ครบ), missingSub (จำนวนจุดย่อยที่ยังขาด) }
+function dayCompletion(dateStr){
+  const recs = recordsOnDate(dateStr);
+  const missingLocs = [];
+  let missingSub = 0;
+  distinctLocations().forEach(loc => {
+    const total = new Set(zonesOfLocation(loc).map(a => a.zone)).size;
+    const checked = new Set(recs.filter(r => r.location === loc).map(r => r.zone)).size;
+    const missing = Math.max(0, total - checked);
+    if(missing > 0 || checked === 0){ missingLocs.push({ loc, missing }); missingSub += missing; }
+  });
+  return { complete: missingLocs.length === 0, missingLocs, missingZones: missingLocs.length, missingSub };
+}
+// เช็คว่าปุ่มนี้กดได้ไหม — kind: 'email' | 'export'
+//  - อีเมล: ต้องตรวจครบทุกโซนของวันที่กำลังตรวจ (state.date) เท่านั้น
+//  - Excel/PDF: ถ้าช่วงวันที่ในตัวกรอง "ไม่รวมวันนี้" (ของเก่า) กดได้เลย; ถ้ารวมวันนี้ ต้องตรวจวันนี้ครบก่อน (ครบแล้วเรียกรายงานตามตัวกรองได้ทั้งหมด)
+//  - โหมดทดสอบ (ตั้งค่า → ข้อมูล) ข้ามการเช็คทั้งหมด
+function gateFor(kind){
+  if(isTestModeActive()) return { ok:true };
+  let date = state.date;
+  if(kind !== 'email'){
+    const from = (document.getElementById('histFrom') || {}).value || '';
+    const to = (document.getElementById('histTo') || {}).value || '';
+    const t = todayStr();
+    const includesToday = (!from || from <= t) && (!to || to >= t);
+    if(!includesToday) return { ok:true };
+    date = t;
+  }
+  const c = dayCompletion(date);
+  return c.complete ? { ok:true } : Object.assign({ ok:false, kind, date }, c);
+}
+function showGateAlert(g){
+  const MAX = 8;
+  const rows = g.missingLocs.slice(0, MAX).map(m => `<div class="sync-row"><span>${escapeHtml(m.loc)}</span><b class="bad">${m.missing ? 'ขาดอีก ' + m.missing + ' จุด' : 'ยังไม่เริ่มตรวจ'}</b></div>`).join('');
+  const more = g.missingLocs.length > MAX ? `<p class="gate-more">และอีก ${g.missingLocs.length - MAX} โซน</p>` : '';
+  const what = g.kind === 'email' ? 'ส่งอีเมลรายงาน' : 'ออกรายงาน Excel / PDF ของวันนี้';
+  document.getElementById('gateBody').innerHTML =
+    `<p class="gate-sum">ตรวจของวันที่ ${escapeHtml(g.date)} ยังไม่ครบ — เหลือ <b>${g.missingZones} โซนใหญ่</b> รวม <b>${g.missingSub} จุดย่อย</b></p>` +
+    rows + more +
+    `<p class="gate-hint">${what}ได้เมื่อตรวจครบทุกโซนแล้ว กรุณากลับไปตรวจให้ครบก่อน` + (g.kind === 'email' ? '' : ' (ถ้าเลือกช่วงวันที่ย้อนหลังที่ไม่รวมวันนี้ ออกรายงานได้เลย)') + `</p>`;
+  showModal('modalGate');
+}
+// ทำปุ่มทั้ง 3 เป็นสีเทาเมื่อกดไม่ได้ (ยังกดได้เพื่อดูแจ้งเตือนว่าขาดอะไรอยู่) — เรียกทุกครั้งที่ข้อมูล/วันที่/ตัวกรองเปลี่ยน
+function updateExportGates(){
+  const set = (id, kind) => {
+    const b = document.getElementById(id); if(!b) return;
+    const g = gateFor(kind);
+    b.classList.toggle('gated', !g.ok);
+    b.setAttribute('aria-disabled', g.ok ? 'false' : 'true');
+    b.title = g.ok ? '' : `ตรวจยังไม่ครบ (เหลือ ${g.missingZones} โซนใหญ่ / ${g.missingSub} จุดย่อย) กดเพื่อดูรายละเอียด`;
+  };
+  set('btnHistExport', 'export'); set('btnHistPdf', 'export'); set('btnHistEmail', 'email');
+}
 
 /* ======================================================================
    ZONE: RENDER - หน้าเริ่มตรวจ (เลือกชื่อผู้ตรวจ/วันที่)
@@ -2238,6 +2311,7 @@ function renderLocationsGrid(){
   eg.querySelectorAll('.loc-btn[data-eventtype]').forEach(btn => { btn.onclick = () => openEventLogModal(btn.dataset.eventtype); });
   const sub = document.getElementById('locSub'); if(sub) sub.textContent = `${locs.length} พื้นที่ · ${DBX.areas.length} จุดตรวจย่อย`;
   updateScene();
+  if(typeof updateExportGates === "function") updateExportGates();
 }
 // ไอคอนเคลื่อนไหวของการ์ดบันทึกเพิ่มเติมแต่ละประเภท (SVG ล้วน)
 const EVENT_ICONS = {
@@ -2808,6 +2882,7 @@ function renderHistoryTable(){
       catch(e){ showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
     };
   });
+  updateExportGates();
 }
 // สร้างไฟล์ Excel (.xlsx) จากผลตรวจที่กรองไว้ ด้วยไลบรารี ExcelJS (ฝังไว้ในไฟล์นี้แล้ว
 // ทำงานได้ออฟไลน์ 100%) — แต่ละแถวคือ 1 ผลตรวจ มีคอลัมน์ "รูปที่ 1, 2, ..." ตามจำนวนรูป
@@ -3104,6 +3179,7 @@ async function withBusyButton(btnId, busyText, action, errorPrefix){
 }
 // ปุ่ม "ออกรายงาน PDF": สร้างแล้วดาวน์โหลดเลย
 async function handleExportPdf(){
+  const g = gateFor('export'); if(!g.ok){ showGateAlert(g); return; }
   await withBusyButton('btnHistPdf', 'กำลังสร้าง PDF...', async () => {
     const docPdf = await generateReportPdf();
     if(!docPdf) return;
@@ -3113,6 +3189,7 @@ async function handleExportPdf(){
 }
 // ปุ่ม "ส่งออก Excel": สร้างแล้วดาวน์โหลด .xlsx (มีรูปฝังอยู่ในไฟล์แล้ว)
 async function handleExportExcel(){
+  const g = gateFor('export'); if(!g.ok){ showGateAlert(g); return; }
   await withBusyButton('btnHistExport', 'กำลังสร้าง Excel...', async () => {
     const buf = await generateHistoryExcel();
     if(!buf) return;
@@ -3140,17 +3217,7 @@ async function exportAllRecordsExcel(){
 // บล็อกไว้ทันที ไม่ให้กดส่งอีเมลได้ (กันรายงานที่ตรวจไม่ครบหลุดออกไป)
 // ยกเว้นตอนเปิด "โหมดทดสอบ" ไว้ (ตั้งค่า → ข้อมูล → ต้องใส่รหัสผ่านตอนเปิด) จะข้ามการเช็คนี้ไปเลย
 async function handleShareEmail(){
-  const zoneCheck = allZonesCompleted();
-  if(!zoneCheck.complete && !isTestModeActive()){
-    // แสดงชื่อโซนที่ยังไม่ครบสูงสุด 5 โซนแรกพอ (ไม่งั้นถ้าเพิ่งเริ่มเวรจะไม่ครบเกือบทุกโซน
-    // ข้อความจะยาวมากจนอ่านยาก) ที่เหลือสรุปเป็นตัวเลขแทน
-    const MAX_SHOW = 5;
-    const shown = zoneCheck.incompleteLocs.slice(0, MAX_SHOW).join(', ');
-    const remain = zoneCheck.incompleteLocs.length - MAX_SHOW;
-    const list = remain > 0 ? `${shown} และอีก ${remain} โซน` : shown;
-    showToast(`ตรวจยังไม่ครบทุกโซน (เหลือ ${list}) กรุณาตรวจให้ครบก่อนส่งอีเมล`, 'error');
-    return;
-  }
+  const g = gateFor('email'); if(!g.ok){ showGateAlert(g); return; }
   await withBusyButton('btnHistEmail', 'กำลังเตรียมไฟล์...', async () => {
     const docPdf = await generateReportPdf();
     if(!docPdf) return;
@@ -3473,6 +3540,8 @@ function wireEvents(){
   document.getElementById('btnHistExport').addEventListener('click', handleExportExcel);
   document.getElementById('btnHistPdf').addEventListener('click', handleExportPdf);
   document.getElementById('btnHistEmail').addEventListener('click', handleShareEmail);
+  ['histFrom','histTo'].forEach(id => document.getElementById(id).addEventListener('change', updateExportGates));
+  document.getElementById('btnGateBack').addEventListener('click', () => { hideModal('modalGate'); const t = document.querySelector('.tab[data-tab="check"]'); if(t) t.click(); });
 }
 
 /* ======================================================================
