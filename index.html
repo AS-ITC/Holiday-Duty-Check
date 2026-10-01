@@ -273,9 +273,7 @@ svg#scene{display:block;width:max(100%,980px);height:auto;aspect-ratio:1200/540;
 @keyframes sonar{0%{transform:scale(.7);opacity:.9}100%{transform:scale(2.3);opacity:0}}
 .pin.pop{animation:popIn .55s var(--ease-out);}
 @keyframes popIn{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
-.pin .lab{font-size:11px;font-weight:600;fill:var(--strong);text-anchor:middle;paint-order:stroke;stroke:var(--sky-top);stroke-width:4px;stroke-linejoin:round;opacity:0;transition:opacity .3s;pointer-events:none;}
-.zone:hover .pin .lab{opacity:1;}
-.fx{display:none;pointer-events:none;}
+.zone:hover .fx{display:none;pointer-events:none;}
 .zone[data-fx=water] .fx-water,.zone[data-fx=air] .fx-air,.zone[data-fx=spark] .fx-spark,.zone[data-fx=gen] .fx-gen{display:block;}
 .drop{fill:#6fd3ff;animation:dropFall 1.3s ease-in infinite;} .drop:nth-child(2){animation-delay:.43s}.drop:nth-child(3){animation-delay:.86s}
 @keyframes dropFall{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(46px);opacity:0}}
@@ -480,6 +478,12 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 :root[data-theme=light] #scene .bb-glow{opacity:0;}
 /* ปุ่ม "เริ่มตรวจ/ตรวจโซนถัดไป" ในแถบความคืบหน้าถูกนำออก (คง element ไว้ให้สคริปต์ไม่พัง) */
 .dock-btn{display:none !important;}
+
+#sceneTip{position:absolute;z-index:9;left:0;top:0;max-width:calc(100% - 16px);padding:8px 14px;border-radius:14px;font-size:13px;font-weight:600;line-height:1.4;color:var(--strong);
+  background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow-md);
+  pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;white-space:normal;width:max-content;}
+#sceneTip.on{opacity:1;transform:none;}
+#scene .sonar,#scene .fx,#scene .fx *{pointer-events:none;}
 </style>
 
 <body>
@@ -522,6 +526,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
         <div class="scene-legend"><span><i class="dot w"></i>รอตรวจ</span><span><i class="dot d"></i>กำลังตรวจ</span><span><i class="dot o"></i>ตรวจแล้ว</span><span><i class="dot i"></i>พบปัญหา</span></div>
         <div class="ring-box"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--line2)" stroke-width="5"/><circle id="ringArc" cx="24" cy="24" r="20" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66" style="transition:stroke-dashoffset .9s var(--ease)"/></svg><div class="t">ความคืบหน้า<b id="ringPct">0%</b></div></div>
         <div class="scroller" id="scroller"><svg id="scene" viewBox="0 0 1200 540" preserveAspectRatio="xMidYMax meet" role="img" aria-label="ภาพโรงงานตอนกลางคืน แสดงสถานะการตรวจของแต่ละโซน"></svg></div>
+        <div id="sceneTip" role="tooltip"></div>
         <div class="dock">
           <div class="meta"><small id="dockSmall">ตรวจแล้ว</small><b id="dockBig">0/0 โซน</b></div>
           <div class="segbar" id="segBar" aria-label="ความคืบหน้าแต่ละโซน"></div>
@@ -1981,11 +1986,14 @@ function distinctFactions(){ return [...new Set(DBX.orgList.map(o => o.faction).
 // "แผนก" แบบ cascading ในฟอร์มเบิกของสโตร์/ขนย้ายเครื่องจักร ตามฝ่ายที่เลือกไว้
 function deptsOfFaction(faction){ return DBX.orgList.filter(o => o.faction === faction); }
 function recordsOnDate(dateStr){ return DBX.records.filter(r => r.checkDate === dateStr); }
+// ผลตรวจของ "ผู้ตรวจที่เลือกอยู่" เท่านั้น ณ วันที่นั้น — ใช้กับหน้าตรวจ/ฉากโรงงาน/สถานะโซน เพื่อให้แต่ละคนเห็นและกรอกงานของตัวเองแยกกัน
+// (ถ้ายังไม่ได้เลือกชื่อ จะไม่มีรายการ) ส่วนตารางในแท็บประวัติยังดูของทุกคนได้ด้วยตัวกรอง "ผู้ตรวจ"
+function myRecordsOnDate(dateStr){ const n = (state.inspectorName || '').trim(); return n ? recordsOnDate(dateStr).filter(r => r.inspector === n) : []; }
 // สถานะของพื้นที่หนึ่ง ๆ ในวันที่กำลังตรวจ (state.date): รอตรวจ/กำลังตรวจ/ตรวจครบแล้ว
 // return: { state: 'pending'|'progress'|'done', totalZones, checkedZones }
-function locationStatus(loc){
+function locationStatus(loc, allInspectors){
   const totalZones = new Set(zonesOfLocation(loc).map(a => a.zone)).size;
-  const checkedZones = new Set(recordsOnDate(state.date).filter(r => r.location === loc).map(r => r.zone)).size;
+  const checkedZones = new Set((allInspectors ? recordsOnDate(state.date) : myRecordsOnDate(state.date)).filter(r => r.location === loc).map(r => r.zone)).size;
   if(checkedZones === 0) return { state:'pending', totalZones, checkedZones };
   if(totalZones > 0 && checkedZones >= totalZones) return { state:'done', totalZones, checkedZones };
   return { state:'progress', totalZones, checkedZones };
@@ -1995,7 +2003,7 @@ function locationStatus(loc){
 // ใช้เช็คก่อนอนุญาตให้กดปุ่ม "ส่ง PDF + Excel ทางอีเมล" — บังคับให้ตรวจครบทุกโซนก่อนส่งรายงาน
 // return: { complete: boolean, incompleteLocs: string[] } — incompleteLocs คือโซนที่ยังไม่ครบ (รอตรวจ/กำลังตรวจ)
 function allZonesCompleted(){
-  const incompleteLocs = distinctLocations().filter(loc => locationStatus(loc).state !== 'done');
+  const incompleteLocs = distinctLocations().filter(loc => locationStatus(loc, true).state !== 'done'); // เช็คครบทั้งวัน (รวมทุกคน) ก่อนส่งรายงาน
   return { complete: incompleteLocs.length === 0, incompleteLocs };
 }
 
@@ -2066,7 +2074,7 @@ function setupAutocomplete(input, listEl, getOptions){
 function renderLocationsGrid(){
   const grid = document.getElementById('locationsGrid');
   const locs = distinctLocations();
-  const day = recordsOnDate(state.date).filter(r => (r.recordType || 'inspection') === 'inspection');
+  const day = myRecordsOnDate(state.date).filter(r => (r.recordType || 'inspection') === 'inspection');
   let html = !locs.length
     ? `<div class="empty-hint" style="grid-column:1/-1;">ยังไม่มีข้อมูลพื้นที่/โซน ไปเพิ่มที่เมนูตั้งค่า → พื้นที่/โซน</div>`
     : locs.map((loc, i) => {
@@ -2110,7 +2118,7 @@ const EVENT_ICONS = {
 // สร้าง markup การ์ดบันทึกเพิ่มเติมอันหนึ่ง — badge แสดงจำนวนรายการทั้งหมดที่มี recordType ตรงกับ type นี้
 // ใน DBX.records (ทุกวันที่ ไม่ใช่แค่วันนี้)
 function renderEventLogCard(type, label){
-  const count = DBX.records.filter(r => r.recordType === type).length;
+  const count = DBX.records.filter(r => r.recordType === type && r.inspector === (state.inspectorName || '').trim()).length;
   const badge = count ? `${count} รายการ` : 'ยังไม่มีรายการ';
   const text = String(label).replace(/^\S+\s+/, ''); // ตัดอีโมจิหน้าชื่อออก (ใช้ไอคอนเคลื่อนไหวแทน)
   return `<button class="loc-btn eventlog" data-eventtype="${type}">${EVENT_ICONS[type] || ''}<span class="loc-name">${escapeHtml(text)}</span><span class="loc-status${count ? ' has' : ''}">${badge}</span></button>`;
@@ -2137,8 +2145,8 @@ function renderZonesBody(){
   body.innerHTML = zones.map(z => {
     // หา record ของ "วันนี้" ก่อน ถ้าไม่เจอลองหา record ล่าสุดของจุดนี้ไม่จำกัดวันที่ —
     // เผื่อกรณีตรวจจุดนี้ไว้วันอื่นแล้วยังไม่ได้ตรวจซ้ำวันนี้ ก็ยังกดแก้ไขของเดิมได้เช่นกัน
-    const rec = recordsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone)
-      || DBX.records.filter(r => r.location === loc && r.zone === z.zone && (r.recordType||'inspection') === 'inspection')
+    const rec = myRecordsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone && (r.recordType||'inspection') === 'inspection')
+      || DBX.records.filter(r => r.location === loc && r.zone === z.zone && (r.recordType||'inspection') === 'inspection' && r.inspector === (state.inspectorName||'').trim())
         .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''))[0];
     return `<div class="zone-row">
       <span class="zone-name">${escapeHtml(z.zone)}</span>
@@ -2316,7 +2324,8 @@ function showEventLogListView(){
 function renderEventLogList(){
   const wrap = document.getElementById('eventLogList');
   const type = state.eventLogType;
-  const rows = DBX.records.filter(r => r.recordType === type).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+  const me = (state.inspectorName || '').trim();
+  const rows = DBX.records.filter(r => r.recordType === type && r.inspector === me).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
   if(!rows.length){ wrap.innerHTML = `<div class="empty-hint">ยังไม่มีรายการ</div>`; return; }
   wrap.innerHTML = rows.map(r => {
     let line1, line2;
@@ -3206,7 +3215,7 @@ function switchSettingsSubtab(tab){
    "ผูกปุ่ม" ยังไม่ต้องรอข้อมูลพร้อม
    ====================================================================== */
 function wireEvents(){
-  document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; });
+  document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; renderLocationsGrid(); }); // เปลี่ยนชื่อ → รายการ/ฉากเปลี่ยนเป็นของคนนั้นทันที
   setupAutocomplete(
     document.getElementById('ddInspector'),
     document.getElementById('inspectorAutoList'),
@@ -3430,8 +3439,10 @@ function buildScene(){
     sEl('path', {'class':'spk', d:'M-24 -4l8 6-6 2 8 6M22 -8l-7 5 6 2-7 6'}, sEl('g', {'class':'fx fx-spark', transform:'translate('+px+' '+py+')'}, zg));
     sEl('circle', {'class':'ring-gen', r:18}, sEl('g', {'class':'fx fx-gen', transform:'translate('+px+' '+py+')'}, zg));
     const pg = sEl('g', {'class':'pin', transform:'translate('+px+' '+py+')', tabindex:0, role:'button'}, zg); scenePins[n] = pg;
-    sEl('circle', {'class':'sonar', r:14}, pg); sEl('circle', {'class':'pb', r:14}, pg); sEl('text', {'class':'pt', y:4.6}, pg).textContent = n; sEl('text', {'class':'lab', y:-22}, pg);
+    sEl('circle', {'class':'sonar', r:14}, pg); sEl('circle', {'class':'pb', r:14}, pg); sEl('text', {'class':'pt', y:4.6}, pg).textContent = n;
     zg.addEventListener('click', () => onSceneZoneClick(n));
+    zg.addEventListener('mouseenter', () => showSceneTip(n)); zg.addEventListener('mouseleave', hideSceneTip);
+    pg.addEventListener('focus', () => showSceneTip(n)); pg.addEventListener('blur', hideSceneTip);
     pg.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onSceneZoneClick(n); } });
   });
   // เสาไฟ (ไฟกะพริบติดตอน intro)
@@ -3453,8 +3464,19 @@ function buildScene(){
 }
 
 // รวบรวมสถานะของทุก location สำหรับวันที่เลือก (state.date) — ใช้ locationStatus() ตัวเดียวกับกริดพื้นที่
+// ป้ายชื่อโซนตอนเอาเมาส์ชี้ — เป็น HTML ลอยเหนือฉากทั้งหมด (ไม่ถูกอาคารบัง/ไม่ถูกขอบฉากตัด)
+function showSceneTip(n){
+  const pin = scenePins[n], tip = document.getElementById('sceneTip'), card = document.getElementById('sceneCard');
+  if(!pin || !tip || !pin.dataset.tip) return;
+  tip.textContent = pin.dataset.tip; tip.classList.add('on');
+  const cb = card.getBoundingClientRect(), pb = pin.querySelector('.pb').getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = pb.left + pb.width/2 - cb.left - tw/2; x = Math.max(8, Math.min(cb.width - tw - 8, x));
+  let y = pb.top - cb.top - th - 10; if(y < 8) y = pb.bottom - cb.top + 10;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideSceneTip(){ const t = document.getElementById('sceneTip'); if(t) t.classList.remove('on'); }
 function sceneInfo(){
-  const day = recordsOnDate(state.date).filter(r => (r.recordType || 'inspection') === 'inspection');
+  const day = myRecordsOnDate(state.date).filter(r => (r.recordType || 'inspection') === 'inspection');
   const rows = distinctLocations().map(loc => {
     const st = locationStatus(loc);
     const iss = day.filter(r => r.location === loc && r.isNormal === 'พบสิ่งผิดปกติ');
@@ -3490,11 +3512,11 @@ function updateScene(){
   Object.keys(SCENE_GEO).forEach(key => {
     const n = Number(key), r = present[n], ze = sceneEls[n], pin = scenePins[n];
     const s = r ? r.s : 'off', sig = r ? s + '|' + r.issues.join(',') : 'off';
+    pin.dataset.tip = r ? r.loc + (r.desc ? ' · ' + r.desc : '') + ' (' + r.st.checkedZones + '/' + r.st.totalZones + ')' : '';
     if(scenePrev[n] === sig) return;
     const first = scenePrev[n] === undefined;
     ze.setAttribute('class', 'zone ' + (r ? 's-' + (s === 'ok' ? 'ok' : s === 'issue' ? 'issue' : s === 'doing' ? 'doing' : 'wait') : 's-wait off'));
     pin.querySelector('.pt').textContent = s === 'ok' ? '✓' : s === 'issue' ? '!' : n;
-    pin.querySelector('.lab').textContent = r ? r.loc + (r.desc ? ' · ' + r.desc : '') + ' (' + r.st.checkedZones + '/' + r.st.totalZones + ')' : '';
     ze.setAttribute('data-fx', r && s === 'issue' ? issueFxCat(r.issues[0]) : '');
     if(!first && r && !document.documentElement.classList.contains('reduce')){ pin.classList.remove('pop'); void pin.getBoundingClientRect(); pin.classList.add('pop'); }
     scenePrev[n] = sig;
@@ -3519,7 +3541,7 @@ function updateScene(){
     : (issueZones ? '<b>พบปัญหา ' + issueZones + ' โซน</b> · ' : 'ยังไม่พบปัญหา · ') + 'กำลังตรวจ ' + prog + ' · รออีก ' + wait + ' โซน · ตรวจแล้ว ' + subDone + ' จาก ' + subTotal + ' จุดย่อย';
   // chips: ปัญหาที่พบ + จำนวนบันทึกเพิ่มเติมของวันนั้น
   const probs = []; info.forEach(r => r.issues.forEach(t => probs.push({ t, loc: r.loc })));
-  const evCounts = {}; DBX.records.filter(r => r.checkDate === state.date && EVENT_LABELS[r.recordType]).forEach(r => { evCounts[r.recordType] = (evCounts[r.recordType] || 0) + 1; });
+  const evCounts = {}; myRecordsOnDate(state.date).filter(r => EVENT_LABELS[r.recordType]).forEach(r => { evCounts[r.recordType] = (evCounts[r.recordType] || 0) + 1; });
   const chipSig = probs.map(p => p.loc + p.t).join('|') + '#' + JSON.stringify(evCounts) + '#' + (N ? allClear : '');
   const chips = document.getElementById('heroChips');
   if(chips.dataset.sig !== chipSig){
