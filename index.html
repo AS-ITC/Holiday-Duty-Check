@@ -500,6 +500,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 .sync-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.5;}
 .sync-row span{color:var(--muted);flex:1;} .sync-row b{flex:1.2;text-align:right;color:var(--strong);font-weight:600;word-break:break-word;}
 .sync-row b.ok{color:var(--ok);} .sync-row b.bad{color:var(--coral-500);}
+
+.chip.pending{background:rgba(245,166,35,.16);color:var(--amber-ink);border-color:rgba(245,166,35,.45);}
+.chip.pending .dot-live{background:var(--amber-500);animation:livePulse 1.2s infinite;}
+.chip .pc{font-size:11px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--amber-500);color:#2b1a00;display:inline-grid;place-items:center;}
 </style>
 
 <body>
@@ -1588,8 +1592,9 @@ function setConnStatusBadge(connected){
   const btn = document.getElementById('btnConnStatus');
   if(!btn) return;
   if(connected){
-    btn.className = 'chip ok';
-    btn.innerHTML = '<i class="dot-live"></i><span class="chip-label"> เชื่อมฐานข้อมูลกลาง</span>';
+    const pend = (typeof pendingGet === 'function') ? pendingGet('dutyCheck_pendingPush').length + pendingGet('dutyCheck_pendingDelete').length : 0;
+    btn.className = pend ? 'chip pending' : 'chip ok';
+    btn.innerHTML = pend ? '<i class="dot-live"></i><span class="chip-label"> กำลังส่งข้อมูล </span><b class="pc">' + pend + '</b>' : '☁️<span class="chip-label"> เชื่อมฐานข้อมูลกลาง</span>';
     btn.title = 'ข้อมูลกำลัง sync กับฐานข้อมูลกลาง ทุกเครื่องที่เชื่อมได้เห็นตรงกัน';
   }else{
     btn.className = 'chip';
@@ -1641,10 +1646,10 @@ function initCloudAuth(){
 // เมื่อเชื่อมต่อได้ / กลับมาออนไลน์ / เปิดแอปกลับมา / ทุก 1 นาที (ดู flushPendingSync)
 const LS_PENDING_PUSH = 'dutyCheck_pendingPush', LS_PENDING_DEL = 'dutyCheck_pendingDelete';
 function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]'); }catch(e){ return []; } }
-function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} }
+function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} if(cloudReady) setConnStatusBadge(true); }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
-const APP_BUILD = '2026-10-01 11:21';
+const APP_BUILD = '2026-10-01 11:27';
 const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
 function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
@@ -1693,9 +1698,9 @@ async function renderSyncPanel(){
 async function openSyncPanel(){ showModal('modalSync'); await renderSyncPanel(); }
 // เทียบกับสิ่งที่อยู่บนฐานข้อมูลกลางจริง: ผลตรวจในเครื่อง (ย้อนหลัง 30 วัน) ที่ฐานข้อมูลกลางยังไม่มี → ส่งขึ้นไป
 // (เก็บกวาดผลตรวจที่เคยตกหล่นจากบั๊กเดิม) — เรียกจาก snapshot แรกที่มาจากเซิร์ฟเวอร์จริง
-let reconciled = false;
+let reconciling = false;
 async function reconcileLocalToCloud(cloudIds){
-  if(reconciled) return 0; reconciled = true;
+  if(reconciling) return 0; reconciling = true;
   try{
     const limit = new Date(Date.now() - 30*86400000).toLocaleDateString('sv-SE');
     const dels = new Set(pendingGet(LS_PENDING_DEL));
@@ -1704,7 +1709,21 @@ async function reconcileLocalToCloud(cloudIds){
     for(const r of local){ if(!cloudIds.has(r.id) && !dels.has(r.id) && (r.checkDate || '') >= limit){ pendingAdd(LS_PENDING_PUSH, r.id); n++; } }
     if(n) await flushPendingSync();
     return n;
-  }catch(err){ console.error('เทียบข้อมูลในเครื่องกับฐานข้อมูลกลางไม่สำเร็จ:', err); reconciled = false; return 0; }
+  }catch(err){ console.error('เทียบข้อมูลในเครื่องกับฐานข้อมูลกลางไม่สำเร็จ:', err); syncErr('เทียบข้อมูล', err); return 0; }
+  finally{ reconciling = false; }
+}
+// ถามเซิร์ฟเวอร์จริงโดยตรง (ไม่พึ่ง snapshot ของ listener ซึ่งอาจมาจากแคชแล้วไม่ยิงซ้ำ) แล้วส่งสิ่งที่ยังขาดขึ้นไป
+// เรียกอัตโนมัติ: ตอนเชื่อมต่อได้ / กลับมาออนไลน์ / กลับมาเปิดแอป / ทุก 10 นาที — ไม่ต้องกดเอง
+async function autoReconcile(){
+  if(!cloudReady || !fbDb || !fsApi) return;
+  try{
+    const snap = await (fsApi.getDocsFromServer || fsApi.getDocs)(fsApi.collection(fbDb, 'records'));
+    if(snap.metadata && snap.metadata.fromCache) return;
+    const ids = new Set(snap.docs.map(d => d.id));
+    syncDiag.cloudIds = ids; syncDiag.snapAt = new Date().toLocaleTimeString('th-TH'); syncDiag.fromCache = false;
+    await reconcileLocalToCloud(ids);
+    await flushPendingSync();
+  }catch(err){ syncErr('ตรวจสอบกับเซิร์ฟเวอร์', err); }
 }
 async function cloudPushRecord(record){
   pendingAdd(LS_PENDING_PUSH, record.id);
@@ -3770,10 +3789,12 @@ initFirebaseSdk().then((ok) => {
     setConnStatusBadge(true);
     startCloudSync();
     backfillLocalRecordsToCloud();
-    flushPendingSync();
-    window.addEventListener('online', flushPendingSync);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden) flushPendingSync(); });
-    setInterval(flushPendingSync, 60000);
+    flushPendingSync(); autoReconcile();
+    window.addEventListener('online', () => { flushPendingSync(); autoReconcile(); });
+    document.addEventListener('visibilitychange', () => { if(document.hidden) flushPendingSync(); else { flushPendingSync(); autoReconcile(); } });
+    window.addEventListener('pagehide', () => { flushPendingSync(); });
+    setInterval(flushPendingSync, 30000);
+    setInterval(autoReconcile, 600000);
     startMasterDataCloudSync();
     seedMasterDataToCloudIfEmpty();
   });
