@@ -1649,7 +1649,7 @@ function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]');
 function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} if(cloudReady) setConnStatusBadge(true); }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
-const APP_BUILD = '2026-10-01 11:27';
+const APP_BUILD = '2026-10-01 12:00';
 const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
 function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
@@ -3685,7 +3685,7 @@ function updateScene(){
   else if(!done && !prog){ em.textContent = 'ยังไม่เริ่มตรวจ'; em.className = ''; }
   else { em.textContent = 'ตรวจแล้ว ' + done + ' จาก ' + N + ' โซน'; em.className = issueZones ? 'bad' : ''; }
   document.getElementById('heroSub').innerHTML = !N ? 'ไปเพิ่มพื้นที่/โซนที่ ⚙️ ตั้งค่า → พื้นที่/โซน'
-    : (issueZones ? '<b>พบปัญหา ' + issueZones + ' โซน</b> · ' : 'ยังไม่พบปัญหา · ') + 'กำลังตรวจ ' + prog + ' · รออีก ' + wait + ' โซน · ตรวจแล้ว ' + subDone + ' จาก ' + subTotal + ' จุดย่อย' + (subTotal > subDone ? ' (ขาดอีก ' + (subTotal - subDone) + ' จุด)' : '');
+    : (issueZones ? '<b>พบปัญหา ' + issueZones + ' โซน</b> · ' : 'ยังไม่พบปัญหา · ') + 'กำลังตรวจ ' + prog + ' · รออีก ' + wait + ' โซน · ตรวจแล้ว ' + subDone + ' จาก ' + subTotal + ' จุดย่อย' + (subTotal > subDone ? ' <span style="white-space:nowrap">(ขาดอีก ' + (subTotal - subDone) + ' จุด)</span>' : '');
   // chips: ปัญหาที่พบ + จำนวนบันทึกเพิ่มเติมของวันนั้น
   const probs = []; info.forEach(r => r.issues.forEach(t => probs.push({ t, loc: r.loc })));
   const evCounts = {}; myRecordsOnDate(state.date).filter(r => EVENT_LABELS[r.recordType]).forEach(r => { evCounts[r.recordType] = (evCounts[r.recordType] || 0) + 1; });
