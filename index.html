@@ -484,6 +484,18 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
   pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;white-space:normal;width:max-content;}
 #sceneTip.on{opacity:1;transform:none;}
 #scene .sonar,#scene .fx,#scene .fx *{pointer-events:none;}
+
+/* ความคืบหน้าจุดย่อย: ป้ายเลข "ขาดอีก N จุด" บนหมุด, แถบสีแบ่งส่วนที่ตรวจแล้ว, บรรทัดสรุปในการ์ดโซน */
+.pin .rem{opacity:0;transition:opacity .4s;pointer-events:none;} .pin .rem.on{opacity:1;}
+.pin .rem circle{fill:#fff;stroke:var(--amber-500);stroke-width:2.2;} .pin .rem text{font-size:12.5px;font-weight:800;fill:#7a4a00;text-anchor:middle;}
+.segbar button.s-issue{background:linear-gradient(90deg,var(--coral-500) var(--p,100%),rgba(249,83,109,.3) var(--p,100%));}
+.segbar button.s-doing{background:linear-gradient(90deg,var(--sky-300) var(--p,100%),rgba(141,229,250,.28) var(--p,100%));}
+.loc-tags{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none;}
+.loc-rest{display:block;margin-top:4px;font-size:12px;font-weight:700;color:var(--muted);} .loc-rest.warn{color:var(--amber-ink);} .loc-rest.ok{color:var(--ok);}
+:root[data-theme=light] .loc-rest.ok{color:#17784a;}
+.tag.warn{border-color:rgba(245,166,35,.55);color:var(--amber-ink);background:rgba(245,166,35,.1);}
+.dot.r{background:#fff;border:2px solid var(--amber-500);width:11px;height:11px;}
+.scene-legend{max-width:calc(100% - 200px);}
 </style>
 
 <body>
@@ -523,7 +535,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 
       <!-- SCENE: ฉากโรงงาน — หมุด/ไฟของแต่ละโซนผูกกับผลตรวจจริง (ดู ZONE: SCENE) -->
       <div class="scene-card copy d4" id="sceneCard">
-        <div class="scene-legend"><span><i class="dot w"></i>รอตรวจ</span><span><i class="dot d"></i>กำลังตรวจ</span><span><i class="dot o"></i>ตรวจแล้ว</span><span><i class="dot i"></i>พบปัญหา</span></div>
+        <div class="scene-legend"><span><i class="dot w"></i>รอตรวจ</span><span><i class="dot d"></i>กำลังตรวจ</span><span><i class="dot o"></i>ตรวจแล้ว</span><span><i class="dot i"></i>พบปัญหา</span><span><i class="dot r"></i>เลข = ขาดอีกกี่จุด</span></div>
         <div class="ring-box"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--line2)" stroke-width="5"/><circle id="ringArc" cx="24" cy="24" r="20" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66" style="transition:stroke-dashoffset .9s var(--ease)"/></svg><div class="t">ความคืบหน้า<b id="ringPct">0%</b></div></div>
         <div class="scroller" id="scroller"><svg id="scene" viewBox="0 0 1200 540" preserveAspectRatio="xMidYMax meet" role="img" aria-label="ภาพโรงงานตอนกลางคืน แสดงสถานะการตรวจของแต่ละโซน"></svg></div>
         <div id="sceneTip" role="tooltip"></div>
@@ -1604,7 +1616,52 @@ function initCloudAuth(){
 // นอกจากนี้ยังลบรูปเก่าที่เกินออกด้วย ถ้าแก้ไขแล้วรูปน้อยลงกว่าตอนบันทึกครั้งก่อน (เช็คจาก
 // subcollection จริงใน Firestore ไม่เดาจาก record ในเครื่องนี้ เพราะเครื่องนี้ไม่รู้ว่า Firestore
 // เคยมีกี่รูปมาก่อนหน้า)
+// ---- คิวส่งขึ้นฐานข้อมูลกลาง (กันข้อมูลตกหล่น) ----
+// เดิมถ้าบันทึกตอนที่ยังเชื่อมฐานข้อมูลกลางไม่เสร็จ (เน็ตช้า/สัญญาณมือถือ/เพิ่งเปิดแอป) หรือส่งไม่สำเร็จ
+// ระบบจะข้ามไปเงียบ ๆ แล้วไม่ส่งซ้ำอีกเลย ทำให้ผลตรวจค้างอยู่แค่ในเครื่องนั้น เครื่องอื่นไม่เห็น
+// ตอนนี้จดรายการที่ "ยังไม่ได้ยืนยันว่าขึ้นฐานข้อมูลกลางแล้ว" ไว้ใน localStorage แล้วส่งซ้ำให้อัตโนมัติ
+// เมื่อเชื่อมต่อได้ / กลับมาออนไลน์ / เปิดแอปกลับมา / ทุก 1 นาที (ดู flushPendingSync)
+const LS_PENDING_PUSH = 'dutyCheck_pendingPush', LS_PENDING_DEL = 'dutyCheck_pendingDelete';
+function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]'); }catch(e){ return []; } }
+function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} }
+function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
+function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
+let flushing = false;
+async function flushPendingSync(){
+  if(flushing || !cloudReady || !fbDb || !fsApi) return 0;
+  flushing = true; let sent = 0;
+  try{
+    const dels = pendingGet(LS_PENDING_DEL);
+    for(const id of dels){ await cloudDeleteRecord(id); sent++; }
+    const ids = pendingGet(LS_PENDING_PUSH);
+    if(ids.length){
+      const all = await idbGetAll('records'), byId = new Map(all.map(r => [r.id, r]));
+      for(const id of ids){
+        const rec = byId.get(id);
+        if(!rec){ pendingRemove(LS_PENDING_PUSH, id); continue; } // ถูกลบในเครื่องไปแล้ว
+        await cloudPushRecord(rec); if(!pendingGet(LS_PENDING_PUSH).includes(id)) sent++;
+      }
+    }
+  }catch(err){ console.error('ส่งรายการค้างขึ้นฐานข้อมูลกลางไม่สำเร็จ (จะลองใหม่):', err); }
+  flushing = false; return sent;
+}
+// เทียบกับสิ่งที่อยู่บนฐานข้อมูลกลางจริง: ผลตรวจในเครื่อง (ย้อนหลัง 30 วัน) ที่ฐานข้อมูลกลางยังไม่มี → ส่งขึ้นไป
+// (เก็บกวาดผลตรวจที่เคยตกหล่นจากบั๊กเดิม) — เรียกจาก snapshot แรกที่มาจากเซิร์ฟเวอร์จริง
+let reconciled = false;
+async function reconcileLocalToCloud(cloudIds){
+  if(reconciled) return 0; reconciled = true;
+  try{
+    const limit = new Date(Date.now() - 30*86400000).toLocaleDateString('sv-SE');
+    const dels = new Set(pendingGet(LS_PENDING_DEL));
+    const local = await idbGetAll('records');
+    let n = 0;
+    for(const r of local){ if(!cloudIds.has(r.id) && !dels.has(r.id) && (r.checkDate || '') >= limit){ pendingAdd(LS_PENDING_PUSH, r.id); n++; } }
+    if(n) await flushPendingSync();
+    return n;
+  }catch(err){ console.error('เทียบข้อมูลในเครื่องกับฐานข้อมูลกลางไม่สำเร็จ:', err); reconciled = false; return 0; }
+}
 async function cloudPushRecord(record){
+  pendingAdd(LS_PENDING_PUSH, record.id);
   if(!cloudReady || !fbDb || !fsApi) return; // ยังไม่ signed-in หรือไม่มี Firebase เลย (เน็ตช้า/หลุด/ถูกบล็อก) ข้ามไปก่อน ไม่บล็อกผู้ใช้
   try{
     const { photos, ...fields } = record;
@@ -1620,6 +1677,7 @@ async function cloudPushRecord(record){
     if(newPhotos.length || !existingPhotosSnap.empty) await batch.commit();
 
     await fsApi.setDoc(fsApi.doc(fbDb, 'records', record.id), fields);
+    pendingRemove(LS_PENDING_PUSH, record.id);
   }catch(err){
     console.error('ส่งข้อมูลขึ้นฐานข้อมูลกลางไม่สำเร็จ:', err);
     // ไม่โชว์ toast รบกวนผู้ใช้ — ข้อมูลยังปลอดภัยอยู่ใน IndexedDB เครื่องนี้แล้ว (ถ้าเป็นเพราะ
@@ -1630,6 +1688,7 @@ async function cloudPushRecord(record){
 // ลบ record ออกจาก Firestore ทั้งเอกสารหลักและรูปย่อยทั้งหมดใน subcollection — เรียกคู่กับ
 // idbDelete เสมอ (ไม่ await ตอนเรียกจากปุ่มลบ ด้วยเหตุผลเดียวกับ cloudPushRecord)
 async function cloudDeleteRecord(id){
+  pendingAdd(LS_PENDING_DEL, id); pendingRemove(LS_PENDING_PUSH, id);
   if(!cloudReady || !fbDb || !fsApi) return;
   try{
     const photosSnap = await fsApi.getDocs(fsApi.collection(fbDb, 'records', id, 'photos'));
@@ -1637,6 +1696,7 @@ async function cloudDeleteRecord(id){
     photosSnap.forEach(d => batch.delete(d.ref));
     batch.delete(fsApi.doc(fbDb, 'records', id));
     await batch.commit();
+    pendingRemove(LS_PENDING_DEL, id);
   }catch(err){
     console.error('ลบข้อมูลออกจากฐานข้อมูลกลางไม่สำเร็จ:', err);
   }
@@ -1671,7 +1731,9 @@ function startCloudSync(){
       await idbPut('records', record);
       changed = true;
     });
-    Promise.all(work).then(() => { if(changed) refreshRecords(); })
+    const cloudIds = new Set(snap.docs.map(d => d.id));
+    const fromServer = !snap.metadata.fromCache;
+    Promise.all(work).then(() => { if(changed) refreshRecords(); if(fromServer) reconcileLocalToCloud(cloudIds); })
       .catch(err => console.error('sync ข้อมูลจากฐานข้อมูลกลางเข้าเครื่องนี้ผิดพลาด:', err));
   }, (err) => {
     console.error('ฟังการเปลี่ยนแปลงจากฐานข้อมูลกลางไม่สำเร็จ:', err);
@@ -2086,10 +2148,13 @@ function renderLocationsGrid(){
         else if(st.state === 'progress') tag = `<span class="loc-status progress">กำลังตรวจ ${st.checkedZones}/${st.totalZones}</span>`;
         else tag = `<span class="loc-status">✅ ตรวจแล้ว</span>`;
         if(nIssue) tag = `<span class="loc-status">⚠️ พบปัญหา ${nIssue}</span>`;
+        const miss = Math.max(0, st.totalZones - st.checkedZones);
+        // บรรทัดที่ 2: ความคืบหน้าจุดย่อย — โซนสีแดง (พบปัญหา) ก็ยังบอกว่าตรวจครบหรือขาดอีกกี่จุด
+        const rest = (st.state === 'pending' || (st.state === 'done' && !nIssue)) ? '' : miss ? `<span class="loc-rest warn">${st.checkedZones}/${st.totalZones} จุด · ขาดอีก&nbsp;${miss}</span>` : `<span class="loc-rest ok">ครบ ${st.totalZones}/${st.totalZones} จุด</span>`;
         const desc = zoneGroupDesc(loc);
         const descHtml = desc ? `<span class="loc-desc">${escapeHtml(desc)} · ${st.totalZones} จุดย่อย</span>` : `<span class="loc-desc">${st.totalZones} จุดย่อย</span>`;
         const num = locZoneNum(loc) || String(loc).trim().charAt(0).toUpperCase();
-        return `<button class="${cls}" data-loc="${escapeHtml(loc)}" style="animation-delay:${Math.min(i,12)*45}ms"><span class="core"><span class="zn">${escapeHtml(String(num))}</span><span class="txt"><span class="loc-name">${escapeHtml(loc)}</span>${descHtml}</span>${tag}</span></button>`;
+        return `<button class="${cls}" data-loc="${escapeHtml(loc)}" style="animation-delay:${Math.min(i,12)*45}ms"><span class="core"><span class="zn">${escapeHtml(String(num))}</span><span class="txt"><span class="loc-name">${escapeHtml(loc)}</span>${descHtml}${rest}</span>${tag}</span></button>`;
       }).join('');
   grid.innerHTML = html;
   grid.querySelectorAll('.loc-btn[data-loc]').forEach(btn => { btn.onclick = () => openZonesModal(btn.dataset.loc); });
@@ -3215,6 +3280,14 @@ function switchSettingsSubtab(tab){
    "ผูกปุ่ม" ยังไม่ต้องรอข้อมูลพร้อม
    ====================================================================== */
 function wireEvents(){
+  // กดป้ายสถานะมุมขวาบน = ส่งรายการที่ค้างอยู่ขึ้นฐานข้อมูลกลางทันที (ใช้เช็คว่าข้อมูลในเครื่องนี้ขึ้นไปครบหรือยัง)
+  document.getElementById('btnConnStatus').addEventListener('click', async () => {
+    if(!cloudReady){ showToast('ยังไม่ได้เชื่อมฐานข้อมูลกลาง — ข้อมูลเก็บในเครื่องนี้ไว้ก่อน และจะส่งให้เองเมื่อเชื่อมต่อได้'); return; }
+    const before = pendingGet(LS_PENDING_PUSH).length + pendingGet(LS_PENDING_DEL).length;
+    await flushPendingSync();
+    const left = pendingGet(LS_PENDING_PUSH).length + pendingGet(LS_PENDING_DEL).length;
+    showToast(left ? 'ยังส่งไม่ครบ เหลือ ' + left + ' รายการ (จะลองใหม่ให้เอง)' : before ? 'ส่งรายการที่ค้างขึ้นฐานข้อมูลกลางครบแล้ว ' + before + ' รายการ' : 'ข้อมูลในเครื่องนี้ขึ้นฐานข้อมูลกลางครบแล้ว');
+  });
   document.getElementById('ddInspector').addEventListener('input', (e) => { state.inspectorName = e.target.value; renderLocationsGrid(); }); // เปลี่ยนชื่อ → รายการ/ฉากเปลี่ยนเป็นของคนนั้นทันที
   setupAutocomplete(
     document.getElementById('ddInspector'),
@@ -3440,6 +3513,7 @@ function buildScene(){
     sEl('circle', {'class':'ring-gen', r:18}, sEl('g', {'class':'fx fx-gen', transform:'translate('+px+' '+py+')'}, zg));
     const pg = sEl('g', {'class':'pin', transform:'translate('+px+' '+py+')', tabindex:0, role:'button'}, zg); scenePins[n] = pg;
     sEl('circle', {'class':'sonar', r:14}, pg); sEl('circle', {'class':'pb', r:14}, pg); sEl('text', {'class':'pt', y:4.6}, pg).textContent = n;
+    const rm = sEl('g', {'class':'rem', transform:'translate(15 -15)'}, pg); sEl('circle', {r:11}, rm); sEl('text', {y:4.2}, rm);
     zg.addEventListener('click', () => onSceneZoneClick(n));
     zg.addEventListener('mouseenter', () => showSceneTip(n)); zg.addEventListener('mouseleave', hideSceneTip);
     pg.addEventListener('focus', () => showSceneTip(n)); pg.addEventListener('blur', hideSceneTip);
@@ -3512,7 +3586,9 @@ function updateScene(){
   Object.keys(SCENE_GEO).forEach(key => {
     const n = Number(key), r = present[n], ze = sceneEls[n], pin = scenePins[n];
     const s = r ? r.s : 'off', sig = r ? s + '|' + r.issues.join(',') : 'off';
-    pin.dataset.tip = r ? r.loc + (r.desc ? ' · ' + r.desc : '') + ' (' + r.st.checkedZones + '/' + r.st.totalZones + ')' : '';
+    const miss = r ? Math.max(0, r.st.totalZones - r.st.checkedZones) : 0;
+    pin.dataset.tip = r ? r.loc + (r.desc ? ' · ' + r.desc : '') + ' — ' + (r.s === 'issue' ? 'พบปัญหา · ' : '') + (r.st.checkedZones ? 'ตรวจแล้ว ' + r.st.checkedZones + '/' + r.st.totalZones + (miss ? ' · ขาดอีก ' + miss + ' จุด' : ' · ครบทุกจุด') : 'ยังไม่ได้ตรวจ (' + r.st.totalZones + ' จุด)') : '';
+    const remG = pin.querySelector('.rem'); remG.classList.toggle('on', !!(r && r.st.checkedZones && miss)); remG.querySelector('text').textContent = miss;
     if(scenePrev[n] === sig) return;
     const first = scenePrev[n] === undefined;
     ze.setAttribute('class', 'zone ' + (r ? 's-' + (s === 'ok' ? 'ok' : s === 'issue' ? 'issue' : s === 'doing' ? 'doing' : 'wait') : 's-wait off'));
@@ -3538,15 +3614,17 @@ function updateScene(){
   else if(!done && !prog){ em.textContent = 'ยังไม่เริ่มตรวจ'; em.className = ''; }
   else { em.textContent = 'ตรวจแล้ว ' + done + ' จาก ' + N + ' โซน'; em.className = issueZones ? 'bad' : ''; }
   document.getElementById('heroSub').innerHTML = !N ? 'ไปเพิ่มพื้นที่/โซนที่ ⚙️ ตั้งค่า → พื้นที่/โซน'
-    : (issueZones ? '<b>พบปัญหา ' + issueZones + ' โซน</b> · ' : 'ยังไม่พบปัญหา · ') + 'กำลังตรวจ ' + prog + ' · รออีก ' + wait + ' โซน · ตรวจแล้ว ' + subDone + ' จาก ' + subTotal + ' จุดย่อย';
+    : (issueZones ? '<b>พบปัญหา ' + issueZones + ' โซน</b> · ' : 'ยังไม่พบปัญหา · ') + 'กำลังตรวจ ' + prog + ' · รออีก ' + wait + ' โซน · ตรวจแล้ว ' + subDone + ' จาก ' + subTotal + ' จุดย่อย' + (subTotal > subDone ? ' (ขาดอีก ' + (subTotal - subDone) + ' จุด)' : '');
   // chips: ปัญหาที่พบ + จำนวนบันทึกเพิ่มเติมของวันนั้น
   const probs = []; info.forEach(r => r.issues.forEach(t => probs.push({ t, loc: r.loc })));
   const evCounts = {}; myRecordsOnDate(state.date).filter(r => EVENT_LABELS[r.recordType]).forEach(r => { evCounts[r.recordType] = (evCounts[r.recordType] || 0) + 1; });
-  const chipSig = probs.map(p => p.loc + p.t).join('|') + '#' + JSON.stringify(evCounts) + '#' + (N ? allClear : '');
+  const incomp = info.filter(r => r.st.checkedZones && r.st.totalZones > r.st.checkedZones); // โซนที่ตรวจไปบางจุดแต่ยังไม่ครบ (รวมโซนสีแดง)
+  const chipSig = incomp.map(r => r.loc + r.st.checkedZones).join(',') + '@' + probs.map(p => p.loc + p.t).join('|') + '#' + JSON.stringify(evCounts) + '#' + (N ? allClear : '');
   const chips = document.getElementById('heroChips');
   if(chips.dataset.sig !== chipSig){
     chips.dataset.sig = chipSig;
     let h = '<span class="lbl">ปัญหาที่พบ</span>' + (probs.length ? probs.slice(0, 6).map((p, i) => '<span class="tag bad" style="animation-delay:'+(i*70)+'ms">' + issueEmoji(p.t) + ' ' + escapeHtml(p.t) + ' · ' + escapeHtml(p.loc) + '</span>').join('') + (probs.length > 6 ? '<span class="tag bad">+' + (probs.length - 6) + '</span>' : '') : '<span class="tag good">✓ ยังไม่พบปัญหา</span>');
+    if(incomp.length) h += '<span class="lbl" style="margin-left:8px">ยังตรวจไม่ครบ</span>' + incomp.slice(0, 8).map((r, i) => '<span class="tag warn" style="animation-delay:'+(i*70)+'ms">' + escapeHtml(r.loc) + ' · ขาด ' + (r.st.totalZones - r.st.checkedZones) + ' จุด</span>').join('');
     const ev = Object.keys(evCounts); if(ev.length) h += '<span class="lbl" style="margin-left:8px">บันทึกเพิ่มเติม</span>' + ev.map(k => '<span class="tag">' + EVENT_LABELS[k] + ' ' + evCounts[k] + '</span>').join('');
     chips.innerHTML = h;
   }
@@ -3555,14 +3633,14 @@ function updateScene(){
   document.getElementById('ringArc').style.strokeDashoffset = 125.66 * (1 - (N ? done / N : 0));
   document.getElementById('dockBig').textContent = done + '/' + N + ' โซน';
   document.getElementById('dockSmall').textContent = subTotal ? 'ตรวจแล้ว ' + subDone + '/' + subTotal + ' จุด' : 'ตรวจแล้ว';
-  const bar = document.getElementById('segBar'), barSig = info.map(r => r.loc + r.s).join('|');
+  const bar = document.getElementById('segBar'), barSig = info.map(r => r.loc + r.s + r.st.checkedZones).join('|');
   if(bar.dataset.sig !== barSig){
     if(bar.dataset.n !== String(N) || !bar.children.length){
       bar.innerHTML = info.map((r, i) => '<button data-i="'+i+'"></button>').join('');
       bar.querySelectorAll('button').forEach(b => { b.onclick = () => { const r = sceneInfo()[Number(b.dataset.i)]; if(!r) return; if(!sceneLocsVisible()){ onSceneZoneClick(r.n); return; } openZonesModal(r.loc); }; });
       bar.dataset.n = String(N);
     }
-    bar.querySelectorAll('button').forEach((b, i) => { const r = info[i]; if(!r) return; b.className = 's-' + r.s; b.title = r.loc + (r.desc ? ' · ' + r.desc : '') + ' — ' + (r.s === 'issue' ? 'พบปัญหา' : r.s === 'ok' ? 'ตรวจแล้ว' : r.s === 'doing' ? 'กำลังตรวจ' : 'รอตรวจ'); });
+    bar.querySelectorAll('button').forEach((b, i) => { const r = info[i]; if(!r) return; b.className = 's-' + r.s; b.style.setProperty('--p', (r.st.totalZones ? Math.round(r.st.checkedZones / r.st.totalZones * 100) : 0) + '%'); const miss = Math.max(0, r.st.totalZones - r.st.checkedZones); b.title = r.loc + (r.desc ? ' · ' + r.desc : '') + (r.st.checkedZones && miss ? ' (ขาดอีก ' + miss + ' จุด)' : '') + ' — ' + (r.s === 'issue' ? 'พบปัญหา' : r.s === 'ok' ? 'ตรวจแล้ว' : r.s === 'doing' ? 'กำลังตรวจ' : 'รอตรวจ'); });
     bar.dataset.sig = barSig;
   }
   const nextRow = info.find(r => r.st.state !== 'done');
@@ -3640,6 +3718,10 @@ initFirebaseSdk().then((ok) => {
     setConnStatusBadge(true);
     startCloudSync();
     backfillLocalRecordsToCloud();
+    flushPendingSync();
+    window.addEventListener('online', flushPendingSync);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) flushPendingSync(); });
+    setInterval(flushPendingSync, 60000);
     startMasterDataCloudSync();
     seedMasterDataToCloudIfEmpty();
   });
