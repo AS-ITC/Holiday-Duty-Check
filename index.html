@@ -524,6 +524,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:64px;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:34px;border-radius:14px;}
 .lb-nav.prev{left:10px;} .lb-nav.next{right:10px;} .lb-nav.hidden{display:none;}
 .lb-count{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:14px;}
+.zone-old{font-size:12px;color:var(--muted);line-height:1.4;}
 </style>
 
 <body>
@@ -1692,7 +1693,7 @@ function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]');
 function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} if(cloudReady) setConnStatusBadge(true); }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
-const APP_BUILD = '2026-10-01 15:41';
+const APP_BUILD = '2026-10-04 12:06';
 const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
 function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
@@ -2382,11 +2383,9 @@ function renderZonesBody(){
   const zones = zonesOfLocation(loc).sort((a,b) => (a.order||0)-(b.order||0));
   if(!zones.length){ body.innerHTML = `<div class="empty-hint">พื้นที่นี้ยังไม่มีโซน</div>`; return; }
   body.innerHTML = zones.map(z => {
-    // หา record ของ "วันนี้" ก่อน ถ้าไม่เจอลองหา record ล่าสุดของจุดนี้ไม่จำกัดวันที่ —
-    // เผื่อกรณีตรวจจุดนี้ไว้วันอื่นแล้วยังไม่ได้ตรวจซ้ำวันนี้ ก็ยังกดแก้ไขของเดิมได้เช่นกัน
-    const rec = myInspectionsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone)
-      || DBX.records.filter(r => r.location === loc && r.zone === z.zone && (r.recordType||'inspection') === 'inspection' && r.inspector === (state.inspectorName||'').trim())
-        .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''))[0];
+    // รายการจุดย่อย "ต้องตรงกับตัวเลขขาดอีกกี่จุด" เป๊ะ — นับเฉพาะผลตรวจของ "วันที่กำลังตรวจ" ของผู้ตรวจคนนี้เท่านั้น
+    // ไม่ดึงผลตรวจของวันอื่นมาแสดงเด็ดขาด — ไม่มีบันทึกของวันที่นั้น = "รอตรวจ"
+    const rec = myInspectionsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone);
     const isIssue = !!rec && rec.isNormal === 'พบสิ่งผิดปกติ';
     const issueLine = isIssue ? `<span class="zone-issue">⚠️ ${escapeHtml(rec.issueType || 'พบสิ่งผิดปกติ')}${rec.description ? ' — ' + escapeHtml(rec.description) : ''}</span>` : '';
     return `<div class="zone-row${isIssue ? ' has-issue' : ''}">
