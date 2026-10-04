@@ -1693,7 +1693,7 @@ function pendingGet(k){ try{ return JSON.parse(localStorage.getItem(k) || '[]');
 function pendingSet(k, arr){ try{ localStorage.setItem(k, JSON.stringify([...new Set(arr)])); }catch(e){} if(cloudReady) setConnStatusBadge(true); }
 function pendingAdd(k, id){ const a = pendingGet(k); if(!a.includes(id)){ a.push(id); pendingSet(k, a); } }
 function pendingRemove(k, id){ pendingSet(k, pendingGet(k).filter(x => x !== id)); }
-const APP_BUILD = '2026-10-04 12:06';
+const APP_BUILD = '2026-10-04 12:19';
 const syncDiag = { lastError: null, cloudIds: null, snapAt: null, fromCache: null };
 function syncErr(where, err){ syncDiag.lastError = { where, msg: (err && (err.code ? err.code + ': ' : '') + (err.message || err)) || 'unknown', at: new Date().toLocaleTimeString('th-TH') }; }
 let flushing = false;
@@ -2324,7 +2324,7 @@ function renderLocationsGrid(){
         if(nIssue) tag = `<span class="loc-status">⚠️ พบปัญหา ${nIssue}</span>`;
         const miss = Math.max(0, st.totalZones - st.checkedZones);
         // บรรทัดที่ 2: ความคืบหน้าจุดย่อย — โซนสีแดง (พบปัญหา) ก็ยังบอกว่าตรวจครบหรือขาดอีกกี่จุด
-        const rest = (st.state === 'pending' || (st.state === 'done' && !nIssue)) ? '' : miss ? `<span class="loc-rest warn">${st.checkedZones}/${st.totalZones} จุด · ขาดอีก&nbsp;${miss}</span>` : `<span class="loc-rest ok">ครบ ${st.totalZones}/${st.totalZones} จุด</span>`;
+        const rest = (st.state === 'pending') ? '' : miss ? `<span class="loc-rest warn">${st.checkedZones}/${st.totalZones} จุด · ขาดอีก&nbsp;${miss}</span>` : `<span class="loc-rest ok">ครบ ${st.totalZones}/${st.totalZones} จุด</span>`;
         const desc = zoneGroupDesc(loc);
         const descHtml = desc ? `<span class="loc-desc">${escapeHtml(desc)} · ${st.totalZones} จุดย่อย</span>` : `<span class="loc-desc">${st.totalZones} จุดย่อย</span>`;
         const num = locZoneNum(loc) || String(loc).trim().charAt(0).toUpperCase();
