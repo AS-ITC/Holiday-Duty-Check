@@ -513,6 +513,7 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
 /* รายการจุดย่อยที่พบปัญหา — เห็นทันทีว่าจุดไหน */
 .zone-row .zone-main{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;}
 .zone-row.has-issue{border-color:var(--coral-500)!important;background:var(--danger-bg)!important;}
+.zone-note{font-size:12.5px;color:var(--muted,#51677c);line-height:1.45;word-break:break-word;}
 .zone-issue{font-size:12.5px;color:var(--danger);line-height:1.45;word-break:break-word;}
 .zone-tag.issue{background:var(--danger-bg);color:var(--danger);border:1px solid var(--coral-500);cursor:pointer;white-space:nowrap;}
 /* ดูรูปขยาย */
@@ -696,10 +697,10 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
           <label>ประเภทปัญหา</label>
           <select id="ddIssueType"></select>
         </div>
-        <div class="field">
-          <label>รายละเอียดเพิ่มเติม</label>
-          <textarea id="txtDescription" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
-        </div>
+      </div>
+      <div class="field">
+        <label>รายละเอียดเพิ่มเติม / ข้อเสนอแนะ (ไม่บังคับ)</label>
+        <textarea id="txtDescription" placeholder="ระบุรายละเอียด เช่น คำชม ข้อเสนอแนะ หรือสิ่งที่อยากแจ้งเพิ่มเติม..."></textarea>
       </div>
       <div class="field">
         <label>แนบรูปภาพ (ไม่บังคับ — ถ่ายได้ทั้งปกติและพบปัญหา)</label>
@@ -2387,7 +2388,8 @@ function renderZonesBody(){
     // ไม่ดึงผลตรวจของวันอื่นมาแสดงเด็ดขาด — ไม่มีบันทึกของวันที่นั้น = "รอตรวจ"
     const rec = myInspectionsOnDate(state.date).find(r => r.location === loc && r.zone === z.zone);
     const isIssue = !!rec && rec.isNormal === 'พบสิ่งผิดปกติ';
-    const issueLine = isIssue ? `<span class="zone-issue">⚠️ ${escapeHtml(rec.issueType || 'พบสิ่งผิดปกติ')}${rec.description ? ' — ' + escapeHtml(rec.description) : ''}</span>` : '';
+    const issueLine = isIssue ? `<span class="zone-issue">⚠️ ${escapeHtml(rec.issueType || 'พบสิ่งผิดปกติ')}${rec.description ? ' — ' + escapeHtml(rec.description) : ''}</span>`
+      : (rec && rec.description ? `<span class="zone-note">💬 ${escapeHtml(rec.description)}</span>` : '');
     return `<div class="zone-row${isIssue ? ' has-issue' : ''}">
       <div class="zone-main"><span class="zone-name">${escapeHtml(z.zone)}</span>${issueLine}</div>
       ${rec
@@ -2476,7 +2478,7 @@ async function submitInspectionForm(){
   if(!status){ showToast('กรุณาเลือกผลการตรวจก่อนกดบันทึก', 'error'); return; }
   const isIssue = status === 'พบสิ่งผิดปกติ';
   const issueType = isIssue ? document.getElementById('ddIssueType').value : '';
-  const description = isIssue ? document.getElementById('txtDescription').value.trim() : '';
+  const description = document.getElementById('txtDescription').value.trim();
 
   const btn = document.getElementById('btnSaveForm');
   const progress = document.getElementById('uploadProgress');
@@ -3136,10 +3138,8 @@ async function generateReportPdf(){
         ? `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}`
         : `${toThaiDate(r.checkDate)}  |  ${r.location} - ${r.zone}  |  ${r.inspector}`;
       extra = [`ผลตรวจ: ${r.isNormal}` + (r.worker ? `   ผู้ปฏิบัติงาน: ${r.worker}` : '')];
-      if(r.isNormal === 'พบสิ่งผิดปกติ'){
-        extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
-        if(r.description) extra.push(`รายละเอียด: ${r.description}`);
-      }
+      if(r.isNormal === 'พบสิ่งผิดปกติ') extra.push(`ประเภทปัญหา: ${r.issueType || '-'}`);
+      if(r.description) extra.push(`รายละเอียด: ${r.description}`);
     } else {
       // บันทึกเบิกของสโตร์/ขนย้ายเครื่องจักร — ใช้ line1/extra คนละแบบจากผลตรวจพื้นที่
       // (ไม่มีพื้นที่/โซน มีฝ่าย/แผนกแทน) แต่โค้ดฝังรูปด้านล่างยังใช้ path เดียวกันเพราะ
