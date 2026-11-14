@@ -700,15 +700,15 @@ th{color:var(--ink-500);font-weight:600;position:sticky;top:0;background:var(--c
           <label>รายละเอียดเพิ่มเติม</label>
           <textarea id="txtDescription" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
         </div>
-        <div class="field">
-          <label>แนบรูปภาพ (จะบีบอัดให้อัตโนมัติก่อนบันทึก)</label>
-          <label for="filePhotos" class="photo-capture-btn">
-            <span class="photo-capture-icon">📷</span>
-            <span class="photo-capture-text">แตะเพื่อถ่ายภาพ หรือเลือกรูปภาพ</span>
-          </label>
-          <input type="file" id="filePhotos" accept="image/*" capture="environment" multiple class="visually-hidden">
-          <div class="attach-list" id="attachList"></div>
-        </div>
+      </div>
+      <div class="field">
+        <label>แนบรูปภาพ (ไม่บังคับ — ถ่ายได้ทั้งปกติและพบปัญหา)</label>
+        <label for="filePhotos" class="photo-capture-btn">
+          <span class="photo-capture-icon">📷</span>
+          <span class="photo-capture-text">แตะเพื่อถ่ายภาพ หรือเลือกรูปภาพ</span>
+        </label>
+        <input type="file" id="filePhotos" accept="image/*" capture="environment" multiple class="visually-hidden">
+        <div class="attach-list" id="attachList"></div>
       </div>
       <div class="upload-progress hidden" id="uploadProgress"></div>
       <button class="btn primary" id="btnSaveForm">บันทึกและตรวจจุดถัดไป</button>
