@@ -2921,6 +2921,17 @@ function renderHistoryTable(){
   });
   updateExportGates();
 }
+// สรุปส่วนหัวรายงาน (PDF/Excel): ผลตรวจพื้นที่ (Zone) + รายการอื่น ๆ นอกจาก Zone แต่ละประเภทมีกี่รายการ
+// ประเภทที่ไม่มีเลยจะได้ n = 0 (แสดงเป็น "ไม่มีรายการ") เพื่อให้ผู้อ่านรู้ว่า "ไม่มี" ไม่ใช่ "ลืมใส่"
+function reportSummary(rows){
+  const insp = rows.filter(r => (r.recordType || 'inspection') === 'inspection');
+  const others = ['store','machine','accident','contractor'].map(t => ({
+    label: typeLabel({ recordType: t }),
+    n: rows.filter(r => r.recordType === t).length,
+  }));
+  return { inspCount: insp.length, issueCount: insp.filter(r => r.isNormal === 'พบสิ่งผิดปกติ').length, others, othersTotal: others.reduce((a, o) => a + o.n, 0) };
+}
+function summaryOtherText(o){ return `${o.label}: ` + (o.n ? `${o.n} รายการ` : 'ไม่มีรายการ'); }
 // สร้างไฟล์ Excel (.xlsx) จากผลตรวจที่กรองไว้ ด้วยไลบรารี ExcelJS (ฝังไว้ในไฟล์นี้แล้ว
 // ทำงานได้ออฟไลน์ 100%) — แต่ละแถวคือ 1 ผลตรวจ มีคอลัมน์ "รูปที่ 1, 2, ..." ตามจำนวนรูป
 // สูงสุดที่พบ และฝังรูปจริงลงในเซลล์นั้น ๆ (ไม่ใช่แค่ตัวเลขจำนวนรูปเหมือนตารางในแอป)
@@ -2943,12 +2954,22 @@ async function generateHistoryExcel(rows){
   wb.created = new Date();
   const ws = wb.addWorksheet('ประวัติการตรวจ');
 
-  ws.columns = [...textHeaders, ...photoHeaders].map(h => ({
-    header: h,
-    width: h === 'รายละเอียด' ? 34 : (photoHeaders.includes(h) ? 13 : 16),
-  }));
-  ws.getRow(1).font = { bold: true };
-  ws.getRow(1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  const allHeaders = [...textHeaders, ...photoHeaders];
+  allHeaders.forEach((h, i) => { ws.getColumn(i + 1).width = h === 'รายละเอียด' ? 34 : (photoHeaders.includes(h) ? 13 : 16); });
+
+  // ส่วนหัวรายงาน: ช่วงวันที่ + สรุปผลตรวจ Zone + สรุปรายการอื่น ๆ นอกจาก Zone
+  const sm = reportSummary(rows);
+  const dates = rows.map(r => r.checkDate).filter(Boolean).sort();
+  ws.addRow(['รายงานสรุปผลตรวจเวรวันหยุด']).font = { bold: true, size: 14 };
+  if(dates.length) ws.addRow([`ช่วงวันที่: ${toThaiDate(dates[0])} - ${toThaiDate(dates[dates.length - 1])}`]);
+  ws.addRow([`ตรวจพื้นที่ (Zone): ${sm.inspCount} จุด   |   พบสิ่งผิดปกติ: ${sm.issueCount} จุด`]);
+  ws.addRow([`รายการอื่น ๆ นอกจาก Zone: ` + (sm.othersTotal ? `รวม ${sm.othersTotal} รายการ` : 'ไม่มีรายการ')]).font = { bold: true };
+  sm.others.forEach(o => { const rr = ws.addRow(['   • ' + summaryOtherText(o)]); if(!o.n) rr.font = { color: { argb: 'FF7C8FA0' } }; });
+  ws.addRow([]);
+  const headerRow = ws.addRow(allHeaders);
+  headerRow.font = { bold: true };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  ws.views = [{ state: 'frozen', ySplit: headerRow.number }];
 
   const THUMB_PX = 76; // ขนาดรูปย่อในไฟล์ Excel (พิกเซล)
 
@@ -3125,8 +3146,17 @@ async function generateReportPdf(){
   docPdf.setFont('Anuphan','normal'); docPdf.setFontSize(10);
   const from = document.getElementById('histFrom').value, to = document.getElementById('histTo').value;
   docPdf.text(`ช่วงวันที่: ${toThaiDate(from) } - ${toThaiDate(to)}`, marginX, y); y += 6;
-  const issueCount = rows.filter(r => r.isNormal === 'พบสิ่งผิดปกติ').length;
-  docPdf.text(`จำนวนจุดตรวจทั้งหมด: ${rows.length}   |   พบสิ่งผิดปกติ: ${issueCount} จุด`, marginX, y); y += 6;
+  const sm = reportSummary(rows);
+  docPdf.text(`ตรวจพื้นที่ (Zone): ${sm.inspCount} จุด   |   พบสิ่งผิดปกติ: ${sm.issueCount} จุด`, marginX, y); y += 6;
+  docPdf.setFont('Anuphan','bold');
+  docPdf.text(`รายการอื่น ๆ นอกจาก Zone: ` + (sm.othersTotal ? `รวม ${sm.othersTotal} รายการ` : 'ไม่มีรายการ'), marginX, y); y += 5.5;
+  docPdf.setFont('Anuphan','normal');
+  sm.others.forEach(o => {
+    if(!o.n) docPdf.setTextColor(124, 143, 160);
+    docPdf.text(`•  ${summaryOtherText(o)}`, marginX + 4, y); y += 5;
+    docPdf.setTextColor(0);
+  });
+  y += 1;
   docPdf.text(`สร้างรายงานเมื่อ: ${new Date().toLocaleString('th-TH')}`, marginX, y); y += 10;
   docPdf.setDrawColor(200); docPdf.line(marginX, y, pageW - marginX, y); y += 8;
 
